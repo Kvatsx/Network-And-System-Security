@@ -290,6 +290,12 @@ void * ConnectionHandler(void * args) {
             else {
                 perror("Error: Recv\n");
             }
+            int it;
+            for(it=0; it<5; it++) {
+                if (strncmp(usernames[it], current_user, 2) == 0) {
+                    LoginStatus[it] = 0;
+                }
+            }
             close(client_socket);
             return NULL;
         }
@@ -297,11 +303,11 @@ void * ConnectionHandler(void * args) {
         // char NewBuff[strlen(RecvBuffer)-1];
         // strcpy(NewBuff, RecvBuffer);
         // NewBuff[strlen(NewBuff)] = '\0';
-        int i;
-        for (i=0; i<strlen(RecvBuffer); i++) {
-            printf("%d\t", RecvBuffer[i]);
-        }
-        printf("Len: %d\n", strlen(RecvBuffer));
+        // int i;
+        // for (i=0; i<strlen(RecvBuffer); i++) {
+            // printf("%d\t", RecvBuffer[i]);
+        // }
+        // printf("Len: %d\n", strlen(RecvBuffer));
 
         char *pArg[100];
         char *parser;
@@ -318,204 +324,114 @@ void * ConnectionHandler(void * args) {
         
         if ( strncmp(pArg[0], "cd", 2) == 0 ) {
             if ( j == 1 ) {
-                if ( chdir(root) != 0 )
-				{
-                    if ( send(client_socket, "Path Problem!\n", 15, 0) == -1 ) {
-                        perror("Error: send error!\n");
-                    }
-					fprintf(stderr, "%s\n", "Path Problem!");
-                }
-                else {
-                    pwd();
-                    memset(Path, '\0', sizeof(Path));
-                    printf("Yeah\n");
-                    strcpy(Path, root);
-                    printf("Yeah\n");
-                    strcat(Path, "simple_slash/");
-                    chdir("simple_slash/");
-                }
+                char line[1024];
+                memset(line, "\0", sizeof(line));
+                strcpy(line, root);
+                strcat(line, "/simple_slash");
+                memset(Path, "\0", sizeof(Path));
+                strcpy(Path, line);
             }
             else if ( j == 2 ) {
-                // if ( strncmp(pArg[1], "~", 1 ) == 0 ) {
-                //     if ( chdir(root) != 0 )
-                //     {
-                //         if ( send(client_socket, "Path Problem!\n", 15, 0) == -1 ) {
-                //             perror("Error: send error!\n");
-                //         }
-                //         fprintf(stderr, "%s\n", "Path Problem!");
-                //         strcat(Path, "/")
-                //     }     
-                // }
-                // else {
-                    if ( strncmp(pArg[1], "..", 2) == 0 ) {
-                        printf("Hey\n");
-                        char cwd[1024];
-	                    getcwd(cwd, sizeof(cwd));
-                        char * LastName = SlashParser(cwd);
-                        printf("LastName: %s\n", LastName);
-                        if ( strcmp(LastName, "simple_slash/") == 0 ) {
-                            printf("Can't go backward!\n");
-                        }
-                        else {
-                            char actual[BUFSIZE];
-                            char *ptr;
-                            printf("yeah!\n");
-                            ptr = realpath(pArg[1], actual);
-                            chdir("..");
-                            pwd();
-                            printf("yeah!\n");
-                            memset(Path, "\0", sizeof(Path));
-                            printf("yeah!\n");
-                            strcpy(Path, actual);
-                            printf("%s\n", Path);
-                        }
+                // if ( strcmp(pArg[1], "..") == 0 ) {
+                printf("Hey\n");
+                char actual[1024];
+                memset(actual, "\0", sizeof(actual));
+
+                char line[1024];
+                memset(line, "\0", sizeof(line));
+
+                strcpy(line, Path);
+                strcat(line, "/");
+                strcat(line, pArg[1]);
+
+                char *ptr;
+                ptr = realpath(line, actual);
+                printf("actual: %s\n%s\n", actual, ptr);
+
+
+                char temp[1024];
+                memset(temp, "\0", sizeof(temp));
+                strcpy(temp, actual);
+                char * LastName = SlashParser(temp);
+                printf("LastName: %s\n%d\n", LastName, strlen(LastName));
+                if ( strstr(actual, "simple_slash") == NULL ) {
+                    if ( send(client_socket, "Wrong Path\n", 12, 0) == -1 ) {
+                        perror("Error: send error!\n");
                     }
-                    else {
-                        char actual[BUFSIZE];
-                        char *ptr;
-                        ptr = realpath(pArg[1], actual);
-                        int flag = 1;
-                        printf("Actual: %s\n", actual);
-                        strcat(actual, "/");
-                        printf("pArg: %s\n", pArg[1]);
-                        if ( strstr(actual, pArg[1]) != NULL ) {
-                            flag = 0;
-                            int fl = 1;
-                            if ( fl ) {
-                                FILE * fpeter;
-                                char * line;
-                                size_t len = 0;
-                                ssize_t read;
-                                char actual[BUFSIZE];
-                                char * ptr;
-                                ptr = realpath("usergroup", actual);
-                                fpeter = fopen(ptr, 'r');
-                                if (fpeter == NULL)
-                                {
-                                    printf("File not found!\n");
-                                }
-                                else {
-                                    while((read = getline(&line, &len, fpeter))!= -1){
-                                        char * token = strtok(line, ":");
-                                        char * tkn = strtok(pArg[1], "/");
-                                        if ( strncmp(token, current_user, 2) == 0 ) {
-                                            token = strtok(NULL, ":");
-                                            if ( strncmp(token, tkn, 2) == 0 ) {
-                                                fl = 0;
-                                                chdir(tkn);
-                                                memset(Path, "\0", sizeof(Path));
-                                                strcpy(Path, actual);
+                }
+                // else if ( strstr(actual, ".") == NULL ) {
+                //     if ( send(client_socket, "Error: Wrong Path\n", 19, 0) == -1 ) {
+                //         perror("Error: send error!\n");
+                //     }
+                // }
+                else if ( strcmp(LastName, "simple_home") == 0 ) {
+                    memset(Path, "\0", sizeof(Path));
+                    strcpy(Path, actual);   
+                }
+                else if ( strcmp(LastName, "simple_slash") == 0 ) {
+                    memset(Path, "\0", sizeof(Path));
+                    strcpy(Path, actual);   
+                }
+                else {
+                    printf("Else:\n");
+                    int flag = 0;
+                    int iter;
+                    for(iter=0; iter<FileCount; iter++) {
+                        char line2[1024];
+                        memset(line2, "\0", sizeof(line2));
+                        strcpy(line2, FilesData[iter]);
+                        char * tok = strtok(line2, ":");
+                        char * pf = strstr(actual, tok);
+                        if ( pf != NULL && strcmp(pf, tok) == 0 ) {
+                            tok = strtok(NULL, ":");
+                            char * owner = tok;
+                            tok = strtok(NULL, ":");
+                            char * group = tok;
+                            if ( strcmp(current_user, owner) == 0 ) {
+                                flag = 1;
+                                break;
+                            }
+                            else if ( strcmp(owner, "-") == 0 ) {
+                                flag = 1;
+                                break;
+                            }
+                            else {
+                                int iter2;
+                                for (iter2=0; iter2<5; iter2++) {
+                                    char line3[1024];
+                                    memset(line3, "\0", sizeof(line3));
+                                    strcpy(line3, usernames[iter2]);
+                                    char * tok = strtok(line3, ":");
+                                    if ( strcmp(current_user, tok) == 0 ) {
+                                        tok = strtok(NULL, ":");
+                                        while(tok != NULL) {
+                                            if ( strcmp(group, tok) == 0 ) {
+                                                flag = 1;
                                                 break;
                                             }
+                                            tok = strtok(NULL, ":");
                                         }
-                                    }   
-                                    
+                                    }
+                                    if (flag) {
+                                        break;
+                                    }
                                 }
                             }
-                            int i;
-                            for(i=0; i<5; i++) {
-                                if ( strncmp(usernames[i], current_user, 2) != 0 && strstr(actual, usernames[i]) != NULL ) {
-                                    fl = 0;
-                                    if ( send(client_socket, "Path Permission Error!\n", 24, 0) == -1 ) {
-                                        perror("Error: send error!\n");
-                                    }
-                                    fprintf(stderr, "%s\n", "Path Problem!");
-                                    break;
-                                }
-                            }
-                            if (fl) {
-                                printf("char %d\n", actual[strlen(actual)]);
-                                printf("%d\n", actual[strlen(actual)-1]);
-
-                                if ( chdir(actual) != 0 ) {
-                                    pwd();
-                                    printf("ActualPath: %s %d\n", actual, strlen(actual));
-                                    printf("%d %d %d\n", actual[strlen(actual)-3], actual[strlen(actual)-2], actual[strlen(actual)-1]);
-                                    if ( send(client_socket, "Path Problem!\n", 15, 0) == -1 ) {
-                                        perror("Error: send error!\n");
-                                    }
-                                    fprintf(stderr, "%s\n", "Path Problem!");
-                                }
-                                else {
-                                    pwd();
-                                    memset(Path, "\0", sizeof(Path));
-                                    strcpy(Path, actual);
-                                }
+                            if (flag) {
+                                break;
                             }
                         }
                     }
-                    // strcpy(Path, "/");
-                    // strstr
-                    // char * token = strtok(pArg[1], "/");
-                    // printf("Parg %s\n", pArg[1]);
-                    // while (token != NULL) { 
-                    //     printf("tok %s\n%d\n", token, strlen(token));
-                    //     if ( strlen(token) == 2 && strncmp(token, ".", 1) == 0) {
-                    //         printf("Stay Here\n");
-                    //     }
-                    //     else if ( strncmp(token, "..", 2) == 0 ) {
-                            // printf("Hey\n");
-                            // char cwd[1024];
-	                        // getcwd(cwd, sizeof(cwd));
-                            // char * LastName = SlashParser(cwd);
-                            // printf("LastName: %s\n", LastName);
-                            // if ( strncmp(LastName, "simple_slash", 13) == 0 ) {
-                            //     printf("Can't go backward!\n");
-                            // }
-                    //         else {
-                    //             if ( chdir("..") != 0 )
-                    //             {
-                    //                 if ( send(client_socket, "Path Problem!\n", 15, 0) == -1 ) {
-                    //                     perror("Error: send error!\n");
-                    //                 }
-                    //                 fprintf(stderr, "%s\n", "Path Problem!");
-                    //                 break;
-                    //             }  
-                    //         }
-                    //     } 
-                    //     else {
-                    //         printf("token: %s\n", token);
-                    //         int flag = 1;
-                    //         int iter;
-                    //         for (iter=0; iter<6; iter++) {
-                    //             if ( strncmp(token, usernames[iter], 2) == 0 && strncmp(current_user, usernames[iter], 2) != 0 ) {
-                    //                 int val = checkCDPermissions(current_user, usernames[iter]);
-                    //                 if ( val == 1 ) {
-                    //                     flag = 1;
-                    //                     break;
-                    //                 }
-                    //                 else {
-                    //                     flag = 0;
-                    //                     if ( send(client_socket, "Permission Error!\n", 19, 0) == -1 ) {
-                    //                         perror("Error: send error!\n");
-                    //                     }
-                    //                     fprintf(stderr, "%s\n", "Permission Error!");
-                    //                 }
-                    //             }
-                    //         }
-                    //         if ( flag == 1 ) {
-                    //             char temp[BUFSIZE];
-                    //             memset(temp, "\0", sizeof(temp));
-                    //             strcpy(temp, token);
-                    //             temp[strlen(temp)] = '\0';
-                    //             printf("Temp: %s\n", temp);
-                    //             if ( chdir(temp) != 0 )
-                    //             {
-                    //                 if ( send(client_socket, "Path Problem!\n", 15, 0) == -1 ) {
-                    //                     perror("Error: send error!\n");
-                    //                 }
-                    //                 flag = 0;
-                    //                 fprintf(stderr, "%s\n", "Path Problem!");
-                    //             }
-                    //         }
-                    //         else if ( flag == 0 ) {
-                    //             break;
-                    //         }
-                    //     }
-                    //     pwd();
-                    //     token = strtok(NULL, "/"); 
-                    // } 
-                // }
+                    if (flag) {
+                        memset(Path, "\0", sizeof(Path));
+                        strcpy(Path, actual);   
+                    }
+                    else {
+                        if ( send(client_socket, "Path Permission Error!\n", 24, 0) == -1 ) {
+                            perror("Error: send error!\n");
+                        }
+                    }
+                }
             }
         }
         else if ( strncmp(pArg[0], "create_dir", 11) == 0 ) {
@@ -571,138 +487,54 @@ void * ConnectionHandler(void * args) {
             }
         }
         else if ( strncmp(pArg[0], "fput", 4) == 0 ) {
-            char actual[1024];
-            memset(actual, "\0", sizeof(actual));
-            char *ptr;
-            char buff[1024];
-            strcpy(buff, Path);
-            strcat(buff, "/");
-            strcat(buff, pArg[1]);
-            printf("%s\n", pArg[1]);
-            printf("buff %s\n", buff);
-            ptr = realpath(buff, actual);
-            printf("actual: %s\nptr: %s\n\n", actual, ptr);
+            if ( j >= 3 ) {
+                char actual[1024];
+                memset(actual, "\0", sizeof(actual));
+                char *ptr;
+                char buff[1024];
+                strcpy(buff, Path);
+                strcat(buff, "/");
+                strcat(buff, pArg[1]);
+                printf("%s\n", pArg[1]);
+                printf("buff %s\n", buff);
+                ptr = realpath(buff, actual);
+                printf("actual: %s\nptr: %s\n\n", actual, ptr);
 
-            int flag = 0;
-            int iter;
-            for(iter=0; iter<FileCount; iter++) {
-                char line[1024];
-                memset(line, "\0", sizeof(line));
-                strcpy(line, FilesData[iter]);
-                char * token = strtok(line, ":");
-                if ( strstr(actual, token) != NULL ){
-                    token = strtok(NULL, ":");
-                    if ( strcmp(token, current_user) == 0 ) {
-                        flag = 1;
-                    }
-                }
-            }
-            printf("flag: %d\n", flag);
-            int file_found = 1;
-            FILE *file;
-            if ((file = fopen(actual, "r")) == NULL)
-            {
-                printf("kya bakc\n");                
-                file_found = 1;
-            }
-            else {
-                file_found = 0;
-                fclose(file);
-            }
-        
-            printf("flag: %d\n", file_found);
-
-            FILE * fp;
-            char * line = NULL;
-            size_t len = 0;
-            ssize_t read;
-
-            if ( flag ) {
-                fp = fopen(actual, "a");
-                if (fp == NULL) {
-                    if ( send(client_socket, "Error: File not found\n", 23, 0) == -1 ) {
-                        perror("Error: send error!\n");
-                    }
-                }
-                else {
-                    int i = 2;
-                    while(pArg[i] != NULL) {
-                        fputs(pArg[i], fp);
-                        fputs(" ", fp);
-                        i++;
-                    }
-                    fputs("\n", fp);
-                    printf("Successfully written to the file!\n");
-                }
-
-                fclose(fp);
-                if (line)
-                    free(line);
-
-                if (file_found) {
-                    char buf[1024];
-                    memset(buf, "\0", sizeof(buf));
-                    char newfile[1024];
-                    memset(newfile, "\0", sizeof(newfile));
-
-                    strcpy(newfile, actual);
-
-                    char* tkn = strstr(newfile, "simple_slash/");
-                    strcpy(buf, tkn);
-                    strcat(buf, ":");
-
-                    char rec[BUFSIZE] = {0};
-                    int status;
-                    if ( (status = recv(client_socket, rec, BUFSIZE, 0)) <= 0 ) {
-                        if ( status == 0 ) {
-                            printf("Error: Client disconnected!\n");
-                        }
-                        else {
-                            perror("Error: Recv\n");
-                        }
-                        close(client_socket);
-                        return NULL;
-                    }
-                    strcat(buf, rec);
-                    strcat(buf, ":");
-                    if ( (status = recv(client_socket, rec, BUFSIZE, 0)) <= 0 ) {
-                        if ( status == 0 ) {
-                            printf("Error: Client disconnected!\n");
-                        }
-                        else {
-                            perror("Error: Recv\n");
-                        }
-                        close(client_socket);
-                        return NULL;
-                    }
-                    strcat(buf, rec);
-                    strcat(buf, "\n");
-                    strcpy(FilesData[FileCount], buf);
-                    FileCount++;
-                    printf("File: %s\n", FilesData[FileCount-1]);
-                }
-            }
-            else {
-                int fl = 1;
-                int iter2;
-                for(iter2=0; iter2<5; iter2++) {
+                int flag = 0;
+                int iter;
+                for(iter=0; iter<FileCount; iter++) {
                     char line[1024];
                     memset(line, "\0", sizeof(line));
-                    strcpy(line, actual);
-                    char line2[1024];
-                    memset(line2, "\0", sizeof(line2));
-                    strcpy(line2, usernames[iter2]);
-                    char * tk =strtok(line2, ":");
-
-                    if (strstr(line, tk) != NULL && strcmp(current_user, tk) != 0) {
-                        fl = 0;
-                        if ( send(client_socket, "Error: File permission\n", 24, 0) == -1 ) {
-                            perror("Error: send error!\n");
+                    strcpy(line, FilesData[iter]);
+                    char * token = strtok(line, ":");
+                    if ( strstr(actual, token) != NULL ){
+                        token = strtok(NULL, ":");
+                        if ( strcmp(token, current_user) == 0 ) {
+                            flag = 1;
                         }
-                        break;
                     }
                 }
-                if (fl) {
+                printf("flag: %d\n", flag);
+                int file_found = 1;
+                FILE *file;
+                if ((file = fopen(actual, "r")) == NULL)
+                {
+                    printf("kya bakc\n");                
+                    file_found = 1;
+                }
+                else {
+                    file_found = 0;
+                    fclose(file);
+                }
+            
+                printf("flag: %d\n", file_found);
+
+                FILE * fp;
+                char * line = NULL;
+                size_t len = 0;
+                ssize_t read;
+
+                if ( flag ) {
                     fp = fopen(actual, "a");
                     if (fp == NULL) {
                         if ( send(client_socket, "Error: File not found\n", 23, 0) == -1 ) {
@@ -710,7 +542,6 @@ void * ConnectionHandler(void * args) {
                         }
                     }
                     else {
-                        printf("writting\n");                        
                         int i = 2;
                         while(pArg[i] != NULL) {
                             fputs(pArg[i], fp);
@@ -746,6 +577,12 @@ void * ConnectionHandler(void * args) {
                             else {
                                 perror("Error: Recv\n");
                             }
+                            int it;
+                            for(it=0; it<5; it++) {
+                                if (strncmp(usernames[it], current_user, 2) == 0) {
+                                    LoginStatus[it] = 0;
+                                }
+                            }
                             close(client_socket);
                             return NULL;
                         }
@@ -758,6 +595,12 @@ void * ConnectionHandler(void * args) {
                             else {
                                 perror("Error: Recv\n");
                             }
+                            int it;
+                            for(it=0; it<5; it++) {
+                                if (strncmp(usernames[it], current_user, 2) == 0) {
+                                    LoginStatus[it] = 0;
+                                }
+                            }
                             close(client_socket);
                             return NULL;
                         }
@@ -768,11 +611,104 @@ void * ConnectionHandler(void * args) {
                         printf("File: %s\n", FilesData[FileCount-1]);
                     }
                 }
+                else {
+                    int fl = 1;
+                    int iter2;
+                    for(iter2=0; iter2<5; iter2++) {
+                        char line[1024];
+                        memset(line, "\0", sizeof(line));
+                        strcpy(line, actual);
+                        char line2[1024];
+                        memset(line2, "\0", sizeof(line2));
+                        strcpy(line2, usernames[iter2]);
+                        char * tk =strtok(line2, ":");
+
+                        if (strstr(line, tk) != NULL && strcmp(current_user, tk) != 0) {
+                            fl = 0;
+                            if ( send(client_socket, "Error: File permission\n", 24, 0) == -1 ) {
+                                perror("Error: send error!\n");
+                            }
+                            break;
+                        }
+                    }
+                    if (fl) {
+                        fp = fopen(actual, "a");
+                        if (fp == NULL) {
+                            if ( send(client_socket, "Error: File not found\n", 23, 0) == -1 ) {
+                                perror("Error: send error!\n");
+                            }
+                        }
+                        else {
+                            printf("writting\n");                        
+                            int i = 2;
+                            while(pArg[i] != NULL) {
+                                fputs(pArg[i], fp);
+                                fputs(" ", fp);
+                                i++;
+                            }
+                            fputs("\n", fp);
+                            printf("Successfully written to the file!\n");
+                        }
+
+                        fclose(fp);
+                        if (line)
+                            free(line);
+
+                        if (file_found) {
+                            char buf[1024];
+                            memset(buf, "\0", sizeof(buf));
+                            char newfile[1024];
+                            memset(newfile, "\0", sizeof(newfile));
+
+                            strcpy(newfile, actual);
+
+                            char* tkn = strstr(newfile, "simple_slash/");
+                            strcpy(buf, tkn);
+                            strcat(buf, ":");
+
+                            char rec[BUFSIZE] = {0};
+                            int status;
+                            if ( (status = recv(client_socket, rec, BUFSIZE, 0)) <= 0 ) {
+                                if ( status == 0 ) {
+                                    printf("Error: Client disconnected!\n");
+                                }
+                                else {
+                                    perror("Error: Recv\n");
+                                }
+                                close(client_socket);
+                                return NULL;
+                            }
+                            strcat(buf, rec);
+                            strcat(buf, ":");
+                            if ( (status = recv(client_socket, rec, BUFSIZE, 0)) <= 0 ) {
+                                if ( status == 0 ) {
+                                    printf("Error: Client disconnected!\n");
+                                }
+                                else {
+                                    perror("Error: Recv\n");
+                                }
+                                close(client_socket);
+                                return NULL;
+                            }
+                            strcat(buf, rec);
+                            strcat(buf, "\n");
+                            strcpy(FilesData[FileCount], buf);
+                            FileCount++;
+                            printf("File: %s\n", FilesData[FileCount-1]);
+                        }
+                    }
+                }
             }
+            else {
+                if ( send(client_socket, "Error: Few Arguments\n", 23, 0) == -1 ) {
+                    perror("Error: send error!\n");
+                }
+            }
+            
         }
         else if ( strncmp(pArg[0], "fget", 4 ) == 0) {
             // printf("%s\t%s\n", RecvBuffer, temp);
-            if (pArg[1] == NULL) {
+            if (pArg[1] == NULL && j == 2) {
                 printf("fput <filename>\n");
             }
             else {
