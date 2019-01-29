@@ -34,11 +34,11 @@ void * SendMessage(void * arg) {
             return NULL;
         }
         char * newline = strtok(Buffer, "\n");
-        int i;
-        for (i=0; i<strlen(newline); i++) {
-            printf("%d ", newline[i]);
-        }
-        printf("%d\n", strlen(newline));
+        // int i;
+        // for (i=0; i<strlen(newline); i++) {
+        //     printf("%d ", newline[i]);
+        // }
+        // printf("%d\n", strlen(newline));
         // Buffer[strlen(Buffer)] = "\0";
         if (send(client_socket, newline, strlen(newline), 0) == -1) {
             perror("send error\n");
