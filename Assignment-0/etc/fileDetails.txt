@@ -1,7 +1,8 @@
 simple_slash/simple_home/u1/testls:u1:u1
 simple_slash/simple_home/u1/testls/testfile.txt:u1:u1
+simple_slash/simple_home/u1/test2:u1:u1
 simple_slash/simple_home/u2/file.txt:u2:u2
-simple_slash/simple_home/u1/newfile.txt:u2:u2
+simple_slash/simple_home/u1/newfile.txt:u1:u1
 simple_slash/simple_home/u1:u1:u1
 simple_slash/simple_home/u2:u2:u2
 simple_slash/simple_home/u3:u3:u3

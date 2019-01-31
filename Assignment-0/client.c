@@ -28,12 +28,15 @@ void * SendMessage(void * arg) {
     while(1) {
         sleep(1);
         fgets(Buffer, BUFSIZE, stdin);
-        if (strncmp(Buffer, "exit", 4) == 0) {
+        // printf("Buf %c\n", Buffer);
+        char * newline = strtok(Buffer, "\n");
+        if (strcmp(newline, "exit") == 0) {
+            // printf("Kya back\n");
             close(client_socket);
             pthread_exit(&thread2);
             return NULL;
         }
-        char * newline = strtok(Buffer, "\n");
+        // printf("lol");
         // int i;
         // for (i=0; i<strlen(newline); i++) {
         //     printf("%d ", newline[i]);
