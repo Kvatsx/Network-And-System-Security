@@ -29,10 +29,11 @@ int main(int argc, char const *argv[]) {
     if (getline(&group, &size, stdin) == -1) {
         printf("Input Error!\n");
     }
-    owner = strtok(owner, "\n");
-    group = strtok(group, "\n");
+    // owner = strtok(owner, "\n");
+    // group = strtok(group, "\n");
     if ( argc == 2 )
 	{
+        printf("%s\n%d\n", argv[1], strlen(argv[1]));
 		char *p;
         p = argv[1];
 		if ( p[0] == '-' )
@@ -59,7 +60,7 @@ int main(int argc, char const *argv[]) {
                     printf("%s\n%d\n", owner, strlen(owner));
                     pwd = getpwnam(owner);
                     if (pwd == NULL) {
-                        perror("User Exists?");
+                        perror("User Exists?:");
                         exit(1);
                     }
                     uid = pwd->pw_uid;
