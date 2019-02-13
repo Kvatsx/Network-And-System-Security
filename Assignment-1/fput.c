@@ -12,11 +12,20 @@ int main(int argc, char const *argv[]) {
         printf("Usage: fput <filename> <strings> \nEx: fput testfile.txt Hey i'm Kaustav, who are you?\n");
         exit(1);
     }
+    PrintUserDetails();
+
+    char *p;
+    p = argv[1];
+    if ( p[0] == '-' ) {
+        printf("Usage: fput <filename> <strings> \nEx: fput testfile.txt Hey i'm Kaustav, who are you?\n");
+        exit(1);
+    }
+
     int flag = 0;
     if ( access(argv[1], F_OK) != -1 ) {
-        int permissions;
-        if ((permissions = checkFilePermissions(argv[1])) == -1) {
-            printf("Error: Permissions\n");
+        int permissions = checkFilePermissions(argv[1]);
+        if (permissions != 1 && permissions != 2) {
+            printf("Error: No permission to read the file!\n");        
             exit(1);
         }
     }
@@ -41,21 +50,24 @@ int main(int argc, char const *argv[]) {
 
     // Add ACL entries
     if (flag == 1) {
-        char * owner = NULL;
-        char * group = NULL;
-        size_t size;
-        printf("Enter Owner: ");
-        if (getline(&owner, &size, stdin) == -1) {
-            printf("Input Error!\n");
-        }
-        printf("Enter Group: ");
-        if (getline(&group, &size, stdin) == -1) {
-            printf("Input Error!\n");
-        }
+        // char * owner = NULL;
+        // char * group = NULL;
+        char owner[1024];
+        char group[1024];
+        memset(owner, '\0', sizeof(owner));
+        memset(group, '\0', sizeof(group));
 
-        int ret = AddAclEntry(argv[1], owner, group);
-        
+        printf("Enter Owner: ");
+        scanf("%s", owner);
+        printf("Enter Group: ");
+        scanf("%s", group);
+
+        if (changeOwnerGroup(argv[1], owner, group) == -1) {
+            perror("chown");
+        }
     }
+
+    PrintUserDetails();
 
     return 0;
 }

@@ -20,7 +20,7 @@ int checkCurrentUser(char * filename) {
         return -1;
     }
     
-    if ((sb.st_uid == calling_user && (S_IRUSR & sb.st_mode)) || calling_user == 1004) {
+    if ((sb.st_uid == calling_user && (S_IRUSR & sb.st_mode)) || calling_user == 0) {
         return 1;
     }
     else
@@ -155,7 +155,7 @@ int checkFilePermissions(char * filename) {
     memset(key, '\0', sizeof(key));
     strcpy(key, "user.");
     strcat(key, pwd->pw_name);
-    printf("Key: %s\n", key);
+    // printf("Key: %s\n", key);
 
     char value[1024];
     memset(value, '\0', sizeof(value));
@@ -164,8 +164,9 @@ int checkFilePermissions(char * filename) {
     size = getxattr(filename, key, NULL, 0);
     if ((size = getxattr(filename, key, value, size)) == -1) {
         // if Name not found in ACL then check for owner and Group.
+        // printf("LOL\n");
         if ( strcmp(pwd_owner->pw_name, pwd->pw_name) == 0 ) {
-            if (sb.st_mode & S_IRUSR && sb.st_mode &  S_IWUSR) {
+            if ((sb.st_mode & S_IRUSR) && (sb.st_mode &  S_IWUSR)) {
                 return 2;
             }
             else if ( sb.st_mode & S_IRUSR ) {
@@ -175,9 +176,11 @@ int checkFilePermissions(char * filename) {
                 return 1;
             }
         }
+        // printf("LOL2\n");
+
         // Check for group permissons
         if ( strcmp(gwd_owner->gr_name, gwd->gr_name) == 0 ) {
-            if (sb.st_mode & S_IRGRP && sb.st_mode &  S_IWGRP) {
+            if ((sb.st_mode & S_IRGRP) && (sb.st_mode &  S_IWGRP)) {
                 return 2;
             }
             else if ( sb.st_mode & S_IRGRP ) {
@@ -188,7 +191,7 @@ int checkFilePermissions(char * filename) {
             }
         }
         // Check Others permissions
-        if (sb.st_mode & S_IROTH && sb.st_mode &  S_IWOTH) {
+        if ((sb.st_mode & S_IROTH) && (sb.st_mode &  S_IWOTH)) {
             return 2;
         }
         else if ( sb.st_mode & S_IROTH ) {
@@ -217,4 +220,22 @@ int AddAclEntry(char * filename, char * owner, char * group) {
         
     }
     return 0;
+}
+
+int changeOwnerGroup(char * filename, char * owner, char * group) {
+    // owner = strtok(owner, "\n");
+    // group = strtok(group, "\n");
+
+    struct passwd * pwd = getpwnam(owner);
+    struct group * gwd = getgrnam(group);
+    // printf("owner: %s\ngroup: %s\n", owner, group);
+    // printf("%s %s\n", pwd->pw_name, gwd->gr_name);
+    if ( pwd != NULL && gwd != NULL ) {
+        int ret = chown(filename, pwd->pw_uid, gwd->gr_gid);
+        if ( ret == -1 ) {
+            perror("chown");
+        }
+        return ret;
+    }
+    return -1;
 }

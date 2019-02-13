@@ -13,37 +13,33 @@ int main(int argc, char const *argv[]) {
     }
     PrintUserDetails();
 
-    int permissions;
-    if ((permissions = checkFilePermissions(argv[1])) == -1) {
-        printf("Error: Permissions\n");
+    int permissions = checkFilePermissions(argv[1]);
+    if (permissions != 0 && permissions != 2) {
+        printf("Error: No permission to read the file!\n");        
         exit(1);
     }
+    printf("Permissions: %d\n", permissions);
 
-    if (permissions == 0 && permissions == 2) {
-        FILE * fp;
-        char * line = NULL;
-        size_t len = 0;
-        ssize_t read;
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
 
-        fp = fopen(argv[1], "r");
-        if (fp == NULL) {
-            perror("File Doesn't exist");
-            exit(1);
-        }
-        while ((read = getline(&line, &len, fp)) != -1) {
-            // printf("%zu\n", read);
-            printf("%s", line);
-        }
-
-        fclose(fp);
-        if (line) {
-            free(line);
-        }
+    fp = fopen(argv[1], "r");
+    if (fp == NULL) {
+        perror("File Doesn't exist");
+        exit(1);
     }
-    else {
-        printf("Error: No permission to read the file!\n");
+    while ((read = getline(&line, &len, fp)) != -1) {
+        // printf("%zu\n", read);
+        printf("%s", line);
     }
-    
+
+    fclose(fp);
+    if (line) {
+        free(line);
+    }
+
     PrintUserDetails();
     return 0;
 }

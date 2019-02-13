@@ -18,76 +18,36 @@ void SyntaxError(const char *in) {
 }
 
 int main(int argc, char const *argv[]) {
-    char * owner = NULL;
-    char * group = NULL;
-    size_t size;
-    printf("Enter Owner: ");
-    if (getline(&owner, &size, stdin) == -1) {
-        printf("Input Error!\n");
+   
+    if ( argc != 2 ) {
+        SyntaxError(argv[0]);
     }
-    printf("Enter Group: ");
-    if (getline(&group, &size, stdin) == -1) {
-        printf("Input Error!\n");
+    PrintUserDetails();
+
+    char *p;
+    p = argv[1];
+    if ( p[0] == '-' ) {
+        SyntaxError(argv[0]);
     }
-    // owner = strtok(owner, "\n");
-    // group = strtok(group, "\n");
-    if ( argc == 2 )
-	{
-        printf("%s\n%d\n", argv[1], strlen(argv[1]));
-		char *p;
-        p = argv[1];
-		if ( p[0] == '-' )
-		{
-			SyntaxError(argv[0]);
-		}
-		else if ( mkdir(argv[1], S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP) < 0 )
-		{
-			Error();
-		}
-        else
-        {
-            if (strcmp(owner, "\n") == 0  && strcmp(group, "\n") == 0) {
-                printf("Default Permissions!\n");
-            }
-            else {
-                uid_t uid;
-                gid_t gid;
-                struct passwd *pwd;
-                char * endptr;
+    else if ( mkdir(argv[1], S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP) < 0 ) {
+        Error();
+    }
+    else {
+        char owner[1024];
+        char group[1024];
+        memset(owner, '\0', sizeof(owner));
+        memset(group, '\0', sizeof(group));
 
-                uid = strtol(owner, &endptr, 10);
-                if (*endptr != '\0') {
-                    printf("%s\n%d\n", owner, strlen(owner));
-                    pwd = getpwnam(owner);
-                    if (pwd == NULL) {
-                        perror("User Exists?:");
-                        exit(1);
-                    }
-                    uid = pwd->pw_uid;
-                }
-                gid = strtol(group, &endptr, 10);
-                if (*endptr != '\0') {
-                    pwd = getpwnam(group);
-                    if (pwd == NULL) {
-                        perror("Group Exists?");
-                        exit(1);
-                    }
-                    gid = pwd->pw_gid;
-                }
+        printf("Enter Owner: ");
+        gets(owner);
 
-                if (chown(argv[1], uid, gid) == -1) {
-                    perror("chown");
-                }
-                else {
-                    printf("Chown Worked!\n");
-                }
-            }
+        printf("Enter Group: ");
+        gets(group);
+
+        if (changeOwnerGroup(argv[1], owner, group) == -1) {
+            printf("Error: Owner and Group not set\nDefault permissions given!\n");
         }
-        
-    }
-    else
-	{
-		SyntaxError(argv[0]);
+        PrintUserDetails();
     }
 
     return 0;
