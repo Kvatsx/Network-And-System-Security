@@ -19,54 +19,49 @@ int checkCurrentUser(char * filename) {
         perror("stat:");
         return -1;
     }
-    char value[1024];
-    memset(value, '\0', sizeof(value));
-    size = getxattr(filename, "user.owner", value, 0);
-    if ((size = getxattr(filename, "user.owner", value, size)) != -1) {
-        // char new_uid[1024];
-        // memset(new_uid, '\0', sizeof(new_uid));
-        // sprintf(new_uid, "%d", calling_user);
-
-        if (strcmp(pwd->pw_name, value) == 0) {
-            return 1;
-        }
-        else {
-            return -1;
-        }
+    
+    if ((sb.st_uid == calling_user && (S_IRUSR & sb.st_mode)) || calling_user == 1004) {
+        return 1;
     }
-    else {
-        // printf("Calling user %d\nReal User: %d\n", calling_user, sb.st_uid);
-        if (sb.st_uid == calling_user || calling_user == 1004) {
-            return 1;
-        }
-        else
-        {
-            return -1;
-        }   
-    } 
+    else
+    {
+        return -1;
+    }   
 }
 
 void showAclList(char * filename) {
     ssize_t size_acl, size, temp_size, keylen;
     char * buf;
     char * key;
+    struct stat sb;
+
+    if (stat(filename, &sb) == -1) {
+        perror("stat:");
+        return -1;
+    }
+    uid_t uid = getuid();
+    struct passwd * pwd = getpwuid(uid);
+    gid_t gid = getgid();
+    struct group * gwd = getgrgid(gid);
 
     printf("# File: %s\n", filename);
-    // printf("size: %d\n", getxattr(filename, "user.owner", temp_value, temp_size));
+    printf("# Owner: %s\n", pwd->pw_name);
+    printf("# Group: %s\n", gwd->gr_name);
+    printf("# Permission: ");
+    printf( (sb.st_mode & S_IRUSR) ? "r" : "-");
+    printf( (sb.st_mode & S_IWUSR) ? "w" : "-");
+    printf( (sb.st_mode & S_IXUSR) ? "x" : "-");
+    printf( (sb.st_mode & S_IRGRP) ? "r" : "-");
+    printf( (sb.st_mode & S_IWGRP) ? "w" : "-");
+    printf( (sb.st_mode & S_IXGRP) ? "x" : "-");
+    printf( (sb.st_mode & S_IROTH) ? "r" : "-");
+    printf( (sb.st_mode & S_IWOTH) ? "w" : "-");
+    printf( (sb.st_mode & S_IXOTH) ? "x" : "-");
+    printf("\n");
+
+
     char val[1024];
     memset(val, '\0', sizeof(val));
-
-    temp_size = getxattr(filename, "user.owner", NULL, 0);
-    if ((temp_size = getxattr(filename, "user.owner", val, temp_size)) != -1) {
-        printf("# Owner: %s\n", val);
-    }
-
-    memset(val, '\0', sizeof(val));
-    temp_size = getxattr(filename, "user.group", NULL, 0);
-    if (getxattr(filename, "user.group", val, temp_size) != -1) {
-        printf("# Group: %s\n", val);
-    }
-
     size_acl = listxattr(filename, NULL, 0);
 
     buf = malloc(size_acl);
@@ -78,9 +73,7 @@ void showAclList(char * filename) {
             size = getxattr(filename, key, NULL, 0);  
             memset(val, '\0', sizeof(val));
             if ((size = getxattr(filename, key, val, size)) != -1) {
-                if ( strcmp("user.owner", key) != 0 && strcmp("user.group", key) != 0 ) {
-                    printf("%s: %s\n", key, val);
-                }
+                printf("%s: %s\n", key, val);                
             }
             keylen = strlen(key) + 1;
             size_acl -= keylen;
@@ -98,47 +91,130 @@ void showFileDetails(char * filename) {
         return;
     }
 
-    char permissions[1024];
-    memset(permissions, '\0', sizeof(permissions));
-
-    // User Permission
-    char val[1024];
-    memset(val, '\0', sizeof(val));
-    ssize_t size;
-    size = getxattr(filename, "user.user", NULL, 0);
-    if ((size = getxattr(filename, "user.user", val, size)) == -1) {
-        strcpy(permissions, val);
-    }
-    else {
-        strcpy(permissions, "---");
-    }
-    // Group permissions
-    memset(val, '\0', sizeof(val));
-    size = getxattr(filename, "user.group", NULL, 0);
-    if ((size = getxattr(filename, "user.group", val, size)) == -1) {
-        strcpy(permissions, val);
-    }
-    else {
-        strcpy(permissions, "---");
-    }
-    // Others permissions
-    memset(val, '\0', sizeof(val));
-    size = getxattr(filename, "user.others", NULL, 0);
-    if ((size = getxattr(filename, "user.others", val, size)) == -1) {
-        strcpy(permissions, val);
-    }
-    else {
-        strcpy(permissions, "---");
-    }
-
     struct passwd * pwd = getpwuid(sb.st_uid);
     struct group * gup = getgrgid(sb.st_gid);
     printf("Filename: %s\n", filename);
     printf("Owner: %s\n", pwd->pw_name); // Need to change to ACL check first.
     printf("Group: %s\n", gup->gr_name);
-    printf("Permissions: %s\n", permissions);
+    printf("Permissions: ");
+    printf( (sb.st_mode & S_IRUSR) ? "r" : "-");
+    printf( (sb.st_mode & S_IWUSR) ? "w" : "-");
+    printf( (sb.st_mode & S_IXUSR) ? "x" : "-");
+    printf( (sb.st_mode & S_IRGRP) ? "r" : "-");
+    printf( (sb.st_mode & S_IWGRP) ? "w" : "-");
+    printf( (sb.st_mode & S_IXGRP) ? "x" : "-");
+    printf( (sb.st_mode & S_IROTH) ? "r" : "-");
+    printf( (sb.st_mode & S_IWOTH) ? "w" : "-");
+    printf( (sb.st_mode & S_IXOTH) ? "x" : "-");
+    printf("\n");
     printf("File Size: %lld\n", sb.st_size);
     printf("Last File Modification: %s\n", ctime(&sb.st_mtime));
+}
+
+void PrintUserDetails(void) {
+    uid_t uid = getuid();
+    uid_t uid_2 = geteuid();
+    struct passwd * pwd1 = getpwuid(uid);
+    struct passwd * pwd2 = getpwuid(uid_2);
+
+    printf("----------------------\nReal user: %s\n", pwd1->pw_name);
+    printf("Effective user: %s\n----------------------\n", pwd2->pw_name);
+}
+
+int getPermission(char * permission) {
+    if (permission[0] == 'r' && permission[1] == 'w') {
+        return 2;
+    }
+    else if (permission[1] == 'w') {
+        return 1;
+    }
+    else if (permission[0] == 'r') {
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
 
 
+int checkFilePermissions(char * filename) {
+    uid_t uid = getuid();
+    struct passwd * pwd = getpwuid(uid);
+    gid_t gid = getgid();
+    struct group * gwd = getgrgid(gid);
+
+    struct stat sb;
+    if (stat(filename, &sb) == -1) {
+        perror("stat");
+        return;
+    }
+    struct passwd * pwd_owner = getpwuid(sb.st_uid);
+    struct group * gwd_owner = getgrgid(sb.st_gid);
+
+    char key[1024];
+    memset(key, '\0', sizeof(key));
+    strcpy(key, "user.");
+    strcat(key, pwd->pw_name);
+    printf("Key: %s\n", key);
+
+    char value[1024];
+    memset(value, '\0', sizeof(value));
+    // Checking for file permissions
+    ssize_t size;
+    size = getxattr(filename, key, NULL, 0);
+    if ((size = getxattr(filename, key, value, size)) == -1) {
+        // if Name not found in ACL then check for owner and Group.
+        if ( strcmp(pwd_owner->pw_name, pwd->pw_name) == 0 ) {
+            if (sb.st_mode & S_IRUSR && sb.st_mode &  S_IWUSR) {
+                return 2;
+            }
+            else if ( sb.st_mode & S_IRUSR ) {
+                return 0;
+            }
+            else if ( sb.st_mode &  S_IWUSR ) {
+                return 1;
+            }
+        }
+        // Check for group permissons
+        if ( strcmp(gwd_owner->gr_name, gwd->gr_name) == 0 ) {
+            if (sb.st_mode & S_IRGRP && sb.st_mode &  S_IWGRP) {
+                return 2;
+            }
+            else if ( sb.st_mode & S_IRGRP ) {
+                return 0;
+            }
+            else if ( sb.st_mode &  S_IWGRP ) {
+                return 1;
+            }
+        }
+        // Check Others permissions
+        if (sb.st_mode & S_IROTH && sb.st_mode &  S_IWOTH) {
+            return 2;
+        }
+        else if ( sb.st_mode & S_IROTH ) {
+            return 0;
+        }
+        else if ( sb.st_mode &  S_IWOTH ) {
+            return 1;
+        }
+        
+    }
+    else {
+        int permissions = getPermission(value);
+        return permissions;
+    }
+    return -1;
+}
+
+int AddAclEntry(char * filename, char * owner, char * group) {
+    uid_t uid = getuid();
+    struct passwd * pwd = getpwuid(uid);
+    gid_t gid = getgid();
+    struct group * gwd = getgrgid(gid);
+
+    if (strcmp(owner, "\n") == 0  && strcmp(group, "\n") == 0) {
+        printf("Default Permissions!\n");
+        
+    }
+    return 0;
 }

@@ -21,6 +21,8 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
 
+    PrintUserDetails();
+
     struct dirent **names;
     int n;
 
@@ -47,12 +49,9 @@ int main(int argc, char const *argv[]) {
 					i++;
 					continue;
 				}
-				// printf("%s\t", (names[i]->d_name));
-                showFileDetails(names[i]->d_name);
-                printf("Error\n");
 
+                showFileDetails(names[i]->d_name);
 				free(names[i]);
-                printf("Error\n");
 				i++;
 				if ( i%10 == 0 )
 				{
@@ -82,7 +81,7 @@ int main(int argc, char const *argv[]) {
                     i++;
                     continue;
                 }
-                // printf("%s\t", (names[i]->d_name));
+
                 showFileDetails(names[i]->d_name);
                 free(names[i]);
                 i++;
@@ -95,7 +94,7 @@ int main(int argc, char const *argv[]) {
             printf("\n");
         }
     }
-
+    PrintUserDetails();
 
     return 0;
 }

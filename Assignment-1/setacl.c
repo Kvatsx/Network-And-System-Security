@@ -17,6 +17,7 @@ int main(int argc, char const *argv[]) {
         printf("Usage: setacl <user.name/user.group.name> <permissions> <filename>\nEx: setacl user.thor r-x testfile.txt\n");
         exit(1);
     }
+    PrintUserDetails();
     // printf("Filename: %s\n", argv[3]);
     if (checkCurrentUser(argv[3]) == -1) {
         perror("Owner mismatch:");   
@@ -28,7 +29,7 @@ int main(int argc, char const *argv[]) {
         strcpy(temp, argv[1]);
         char * token = strtok(temp, ".");
         token = strtok(NULL, ".");
-        printf("name: %s\n%d\n", token, strlen(token));
+        // printf("name: %s\n%d\n", token, strlen(token));
         struct passwd * pwd = getpwnam(token);
 
         if (pwd != NULL) {
@@ -45,6 +46,8 @@ int main(int argc, char const *argv[]) {
             printf("Error: User doesn't exist!\n");
         }
     }
+
+    PrintUserDetails();
 
     return 0;
 }

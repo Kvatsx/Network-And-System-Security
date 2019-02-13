@@ -16,7 +16,8 @@ int main(int argc, char const *argv[]) {
     if ( argc != 2 ) {
         printf("Usage: getacl <filename>\n");
         exit(1);
-    }
+    }   
+    PrintUserDetails();
     
     if (checkCurrentUser(argv[1]) == -1) {
         perror("Owner mismatch:");   
@@ -25,6 +26,7 @@ int main(int argc, char const *argv[]) {
     else {
         showAclList(argv[1]);
     }
+    PrintUserDetails();
     
     return 0;
 }
