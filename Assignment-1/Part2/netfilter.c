@@ -14,14 +14,14 @@ static struct nf_hook_ops nfhook;
 unsigned int NmapFunc(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *)) {
 	struct iphdr * ip_header;
 	struct tcphdr * tcph;
-	printk("ok1");
+//	printk("ok1");
 	ip_header = (struct iphdr *)skb_network_header(skb);
-	printk("ok2 %d\n", ip_header->protocol);
+//	printk("ok2 %d lol\n", ip_header->protocol);
 	if (ip_header->protocol == IPPROTO_TCP) {
-		printk("ok3");
+//		printk("ok3");
 		tcph = (struct tcphdr *)skb_transport_header(skb);
 		if (tcph->source) {
-			printk("ok4");
+//			printk("ok4");
 			// TCP XMAS SCAN
 			// FIN, PSH AND URG FLAG SET
 			if (tcph->fin && tcph->psh && !tcph->ack && !tcph->syn && tcph->urg && !tcph->rst) {
