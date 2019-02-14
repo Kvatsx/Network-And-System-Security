@@ -16,7 +16,7 @@ unsigned int NmapFunc(unsigned int hooknum, struct sk_buff *skb, const struct ne
 	struct tcphdr * tcph;
 	printk("ok1");
 	ip_header = (struct iphdr *)skb_network_header(skb);
-	printk("ok2");
+	printk("ok2 %d\n", ip_header->protocol);
 	if (ip_header->protocol == IPPROTO_TCP) {
 		printk("ok3");
 		tcph = (struct tcphdr *)skb_transport_header(skb);
