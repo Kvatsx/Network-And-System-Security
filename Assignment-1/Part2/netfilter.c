@@ -13,13 +13,15 @@ static struct nf_hook_ops nfhook;
 unsigned int NmapFunc(unsigned int hookNum, struct sk_buff *skbuffer) {
 	struct iphdr * ip_header;
 	struct tcphdr * tcph;
-
+	printk("ok1");
 	if (skbuffer) {
 		ip_header = ip_hdr(skbuffer);
-
+		printk("ok2");
 		if (ip_header && ip_header->protocol == IPPROTO_TCP) {
+			printk("ok3");
 			tcph = (struct tcphdr *)(ip_header + ip_header->ihl);
 			if (tcph->source) {
+				printk("ok4");
 				// TCP XMAS SCAN
 				// FIN, PSH AND URG FLAG SET
 				if (tcph->fin && tcph->psh && !tcph->ack && !tcph->syn && tcph->urg && !tcph->rst) {
