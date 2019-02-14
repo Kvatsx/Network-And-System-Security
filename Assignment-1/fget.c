@@ -23,7 +23,7 @@ int main(int argc, char const *argv[]) {
         printf("Error: No permission to read the file!\n");        
         exit(1);
     }
-    printf("Permissions: %d\n", permissions);
+    // printf("Permissions: %d\n", permissions);
 
     FILE * fp;
     char * line = NULL;
@@ -45,6 +45,7 @@ int main(int argc, char const *argv[]) {
         free(line);
     }
 
+    seteuid(getuid());
     PrintUserDetails();
     return 0;
 }

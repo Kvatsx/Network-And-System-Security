@@ -24,8 +24,8 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
     // printf("Filename: %s\n", argv[3]);
-    if (checkCurrentUser(argv[3]) == -1) {
-        perror("Owner mismatch:");   
+    if (checkCurrentUser(argv[3], 1) == -1) {
+        perror("Permissions mismatch:");   
         return -1;
     }
     else {
@@ -52,6 +52,7 @@ int main(int argc, char const *argv[]) {
         }
     }
 
+    seteuid(getuid());
     PrintUserDetails();
 
     return 0;

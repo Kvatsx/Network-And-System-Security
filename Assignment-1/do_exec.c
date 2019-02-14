@@ -10,7 +10,7 @@
 
 int main(int argc, char const *argv[]) {
 
-    if (argc != 2) {
+    if (argc < 2) {
         printf("Usage: do_exec <binary>\nEx: do_exec MyBin\n");
         exit(1);
     }
@@ -32,13 +32,18 @@ int main(int argc, char const *argv[]) {
     uid_t owner = sb.st_uid;
 
     char *temp[argc];
+    // temp[0] = argv[1];
     int i;
     int index = 0;
     for  (i=1; i<argc; i++) {
         temp[index] = argv[i];
+        printf("%s ", temp[index]);
         index++;
     }
     temp[argc-1] = NULL;
+
+    printf("\n");
+    // printf("%s\n", temp[0]);
 
     if (fork() == 0) {
         setuid(owner);
@@ -51,6 +56,7 @@ int main(int argc, char const *argv[]) {
         wait(NULL);
     }
 
+    seteuid(getuid());    
     PrintUserDetails();
 
     return 0;

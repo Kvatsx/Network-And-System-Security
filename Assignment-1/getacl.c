@@ -24,13 +24,15 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
     
-    if (checkCurrentUser(argv[1]) == -1) {
+    if (checkCurrentUser(argv[1], 0) == -1) {
         perror("Owner mismatch:");   
         return -1;
     }
     else {
         showAclList(argv[1]);
     }
+
+    seteuid(getuid());
     PrintUserDetails();
     
     return 0;

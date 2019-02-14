@@ -22,6 +22,10 @@ int main(int argc, char const *argv[]) {
     }
 
     PrintUserDetails();
+    // char * realpath;
+    // realpath = malloc(1024*sizeof(char));
+    // ActualPath(argv[1], realpath);
+    // printf("asda: %s\n", realpath);
 
     struct dirent **names;
     int n;
@@ -50,13 +54,9 @@ int main(int argc, char const *argv[]) {
 					continue;
 				}
 
-                showFileDetails(names[i]->d_name);
+                showFileDetails(names[i]->d_name, names[i]->d_name);
 				free(names[i]);
 				i++;
-				if ( i%10 == 0 )
-				{
-					printf("\n");
-				}
 			}
 			printf("\n");
 			free(names);
@@ -68,6 +68,7 @@ int main(int argc, char const *argv[]) {
             printf("Error: Path\n");
             exit(1);
         }
+        // printf("argv[1]: %s\n", argv[1]);
         n = scandir(argv[1], &names, NULL, alphasort);
         if ( n < 0 )
         {
@@ -85,20 +86,24 @@ int main(int argc, char const *argv[]) {
                     i++;
                     continue;
                 }
-
-                showFileDetails(names[i]->d_name);
+                // printf("%s\n", names[i]->d_name);  
+                char temp[1024];
+                memset(temp, '\0', sizeof(temp));
+                strcpy(temp, argv[1]);
+                // strcat(temp, "/");
+                strcat(temp, names[i]->d_name);
+                // printf("%s\n", temp);
+                showFileDetails(temp, names[i]->d_name);
                 free(names[i]);
                 i++;
-                if ( i%10 == 0 )
-                {
-                    printf("\n");
-                }
             }
             free(names);
-            printf("\n");
+            // printf("\n");
         }
     }
+    seteuid(getuid());
     PrintUserDetails();
+    // free(realpath);
 
     return 0;
 }

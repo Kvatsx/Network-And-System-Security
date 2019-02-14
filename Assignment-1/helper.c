@@ -7,18 +7,39 @@
 #include <time.h>
 #include <sys/xattr.h>
 
-int checkCurrentUser(char * filename) {
+int checkCurrentUser(char * filename, int type) {
     uid_t calling_user;
     struct stat sb;
     ssize_t size;
 
     calling_user = getuid();
+    struct passwd * pwd = getpwuid(calling_user);
     
     if (stat(filename, &sb) == -1) {
         perror("stat:");
         return -1;
     }
-    
+    char value[1024];
+    memset(value, '\0', sizeof(value));
+    char acl_check[1024];
+    memset(acl_check, '\0', sizeof(acl_check));
+    strcpy(acl_check, "user.");
+    strcat(acl_check, pwd->pw_name);
+
+    size = getxattr(filename, acl_check, NULL, 0);
+    if ((size = getxattr(filename, acl_check, value, size)) != -1) {
+        int num = getPermission(value);
+        if ( type == 0 ) {
+            if ( num == 0 || num == 2 ) {
+                return 1;
+            }
+        }
+        else {
+            if ( num == 1 || num == 2 ) {
+                return 1;
+            }
+        }
+    }
     if ((sb.st_uid == calling_user && (S_IRUSR & sb.st_mode)) || calling_user == 0) {
         return 1;
     }
@@ -27,23 +48,64 @@ int checkCurrentUser(char * filename) {
         return -1;
     }   
 }
+// char * SlashParser(char * brr) {
+//     char arr[1024];
+//     memset(arr, '\0', sizeof(arr));
+//     strcpy(arr, brr);
+//     char crr[1024];
+//     memset(crr, '\0', sizeof(crr));
+//     strcpy(crr, brr);
+//     printf("Token: %s\n", arr); 
+//     int count = 0;
+//     int k;
+//     for (k=0; k<strlen(arr); k++) {
+//         if ( k != 0 && arr[k] == '/' ) {
+//             count++;
+//         }
+//     }
+//     printf("Count: %d\n", count);
+//     char * token = strtok(crr, "/");
+//     int j;
+//     for (j=0; j<count; j++) {
+//         token = strtok(NULL, "/");                   
+//         printf("After %s\n", token);
+//     }
+//     // printf("tkon: %s\n", token);
+//     return token;
+// }
 
 void showAclList(char * filename) {
     ssize_t size_acl, size, temp_size, keylen;
     char * buf;
     char * key;
     struct stat sb;
+    // char cwd[1024];
+    // getcwd(cwd, sizeof(cwd));
+    // strcat(cwd, "/");
+    // strcat(cwd, filename);
+    // char map[1024];
+    // realpath(cwd, map);
+    // char * end = SlashParser(map);
 
     if (stat(filename, &sb) == -1) {
         perror("stat:");
         return -1;
     }
     uid_t uid = getuid();
-    struct passwd * pwd = getpwuid(uid);
+    struct passwd * pwd = getpwuid(sb.st_uid);
     gid_t gid = getgid();
-    struct group * gwd = getgrgid(gid);
+    struct group * gwd = getgrgid(sb.st_gid);
 
-    printf("# File: %s\n", filename);
+    char val[1024];
+    // size = getxattr(filename, "user.filename", NULL, 0);  
+    // memset(val, '\0', sizeof(val));
+    // if ((size = getxattr(filename, "user.filename", val, size)) != -1) {
+    //     printf("# File: %s\n", val);
+    // }
+    // else {
+        printf("# File: %s\n", filename);
+    // }
+
     printf("# Owner: %s\n", pwd->pw_name);
     printf("# Group: %s\n", gwd->gr_name);
     printf("# Permission: ");
@@ -59,7 +121,6 @@ void showAclList(char * filename) {
     printf("\n");
 
 
-    char val[1024];
     memset(val, '\0', sizeof(val));
     size_acl = listxattr(filename, NULL, 0);
 
@@ -72,7 +133,9 @@ void showAclList(char * filename) {
             size = getxattr(filename, key, NULL, 0);  
             memset(val, '\0', sizeof(val));
             if ((size = getxattr(filename, key, val, size)) != -1) {
-                printf("%s: %s\n", key, val);                
+                if ( strcmp(key, "user.filename") != 0 ) {
+                    printf("%s: %s\n", key, val);                
+                }
             }
             keylen = strlen(key) + 1;
             size_acl -= keylen;
@@ -81,21 +144,42 @@ void showAclList(char * filename) {
         
     }
 }
+// void ActualPath(char * filename, char * fp) {
+//     char path[1024];
+//     memset(path, '\0', sizeof(path));
+//     getcwd(path, sizeof(path));
+//     strcat(path, "/");
+//     strcat(path, filename);
+//     printf("%s\n", path);
+//     char temp[1024];
+//     realpath(path, temp);
+//     sprintf(fp, "%s\0", temp);
+// }
 
 int checkPath(char * filename) {
-    char path[1024];
-    memset(path, '\0', sizeof(path));
+    // char path[1024];
+    // memset(path, '\0', sizeof(path));
 
-    char * ret = realpath(filename, path);
-    printf("%s\n", path);
-    if (strstr(path, "/fakeslash/fakehome") == NULL) {
-        return -1;
-    }
+    // char * ret = realpath(filename, path);
+    // // printf("%s\n", path);
+    // if (strstr(path, "/fakeslash/fakehome") == NULL) {
+    //     return -1;
+    // }
     return 1;
 }
 
-void showFileDetails(char * filename) {
+void showFileDetails(char * filename, char * actual) {
     struct stat sb;
+    // char path[1024];
+    // char Path2[1024];
+    // memset(path, '\0', sizeof(path));
+    // memset(Path2, '\0', sizeof(Path2));
+    // getcwd(Path2, sizeof(Path2));
+    // strcat(Path2, "/");
+    // strcat(Path2, filename);
+
+    // realpath(Path2, path);
+    // printf("RealPath: %s\n", path);
 
     if (stat(filename, &sb) == -1) {
         perror("stat");
@@ -104,7 +188,7 @@ void showFileDetails(char * filename) {
 
     struct passwd * pwd = getpwuid(sb.st_uid);
     struct group * gup = getgrgid(sb.st_gid);
-    printf("Filename: %s\n", filename);
+    printf("Filename: %s\n", actual);
     printf("Owner: %s\n", pwd->pw_name); // Need to change to ACL check first.
     printf("Group: %s\n", gup->gr_name);
     printf("Permissions: ");
@@ -250,5 +334,24 @@ int changeOwnerGroup(char * filename, char * owner, char * group) {
         }
         return ret;
     }
+    // else {
+    //     struct stat sb;
+    //     char cwd[1024];
+    //     getcwd(cwd, sizeof(cwd));
+    //     if (stat(cwd, &sb) == -1) {
+    //         perror("stat");
+    //         return;
+    //     }
+    //     // strcat(cwd, "/");
+    //     // strcat(cwd, filename);
+    //     // printf("Path: %s\n", cwd);
+    //     pwd = getpwuid(sb.st_uid);
+    //     gwd = getgrgid(sb.st_gid);
+    //     int ret = chown(cwd, pwd->pw_uid, gwd->gr_gid);
+    //     if ( ret == -1 ) {
+    //         perror("chown");
+    //     }
+    //     return ret;
+    // }
     return -1;
 }

@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <grp.h>
+#include <limits.h>
+#include <stdlib.h>
 
 void Error() {
 	fprintf(stderr, "Cannot create directory using mkdir\n");
@@ -28,7 +30,13 @@ int main(int argc, char const *argv[]) {
         printf("Error: Path\n");
         exit(1);
     }
-
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    strcat(cwd, "/");
+    strcat(cwd, argv[1]);
+    char rp[1024];
+    realpath(cwd, rp);
+    printf("Path: %s\n", rp);
     char *p;
     p = argv[1];
     if ( p[0] == '-' ) {
@@ -52,8 +60,10 @@ int main(int argc, char const *argv[]) {
         if (changeOwnerGroup(argv[1], owner, group) == -1) {
             printf("Error: Owner and Group not set\nDefault permissions given!\n");
         }
-        PrintUserDetails();
     }
+
+    seteuid(getuid());
+    PrintUserDetails();
 
     return 0;
 }

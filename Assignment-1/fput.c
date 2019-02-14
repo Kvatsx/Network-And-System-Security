@@ -37,7 +37,7 @@ int main(int argc, char const *argv[]) {
     else {
         flag = 1;
     }
-
+    
     FILE *fptr;
 
     fptr = fopen(argv[1], "a");
@@ -63,15 +63,17 @@ int main(int argc, char const *argv[]) {
         memset(group, '\0', sizeof(group));
 
         printf("Enter Owner: ");
-        scanf("%s", owner);
+        gets(owner);
+
         printf("Enter Group: ");
-        scanf("%s", group);
+        gets(group);
 
         if (changeOwnerGroup(argv[1], owner, group) == -1) {
             perror("chown");
         }
     }
 
+    seteuid(getuid());
     PrintUserDetails();
 
     return 0;
