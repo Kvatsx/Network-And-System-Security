@@ -14,10 +14,15 @@
 int main(int argc, char const *argv[]) {
 
     if ( argc != 4 ) {
-        printf("Usage: setacl <user.name/user.group.name> <permissions> <filename>\nEx: setacl user.thor r-x testfile.txt\n");
+        printf("Usage: setacl <user.name> <permissions> <filename>\nEx: setacl user.thor r-x testfile.txt\n");
         exit(1);
     }
     PrintUserDetails();
+
+    if (checkPath(argv[3]) == -1) {
+        printf("Error: Path\n");
+        exit(1);
+    }
     // printf("Filename: %s\n", argv[3]);
     if (checkCurrentUser(argv[3]) == -1) {
         perror("Owner mismatch:");   

@@ -13,7 +13,6 @@ int checkCurrentUser(char * filename) {
     ssize_t size;
 
     calling_user = getuid();
-    struct passwd * pwd = getpwuid(calling_user);
     
     if (stat(filename, &sb) == -1) {
         perror("stat:");
@@ -83,6 +82,18 @@ void showAclList(char * filename) {
     }
 }
 
+int checkPath(char * filename) {
+    char path[1024];
+    memset(path, '\0', sizeof(path));
+
+    char * ret = realpath(filename, path);
+    printf("%s\n", path);
+    if (strstr(path, "/fakeslash/fakehome") == NULL) {
+        return -1;
+    }
+    return 1;
+}
+
 void showFileDetails(char * filename) {
     struct stat sb;
 
@@ -113,12 +124,14 @@ void showFileDetails(char * filename) {
 
 void PrintUserDetails(void) {
     uid_t uid = getuid();
-    uid_t uid_2 = geteuid();
     struct passwd * pwd1 = getpwuid(uid);
-    struct passwd * pwd2 = getpwuid(uid_2);
-
     printf("----------------------\nReal user: %s\n", pwd1->pw_name);
+    uid_t uid_2 = geteuid();
+    struct passwd * pwd2 = getpwuid(uid_2);
     printf("Effective user: %s\n----------------------\n", pwd2->pw_name);
+
+    // printf("%d %d\n", uid, uid_2);
+
 }
 
 int getPermission(char * permission) {

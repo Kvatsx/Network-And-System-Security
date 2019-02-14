@@ -14,6 +14,11 @@ int main(int argc, char const *argv[]) {
     }
     PrintUserDetails();
 
+    if (checkPath(argv[1]) == -1) {
+        printf("Error: Path\n");
+        exit(1);
+    }
+
     char *p;
     p = argv[1];
     if ( p[0] == '-' ) {

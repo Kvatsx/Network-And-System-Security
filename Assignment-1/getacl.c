@@ -18,6 +18,11 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }   
     PrintUserDetails();
+
+    if (checkPath(argv[1]) == -1) {
+        printf("Error: Path\n");
+        exit(1);
+    }
     
     if (checkCurrentUser(argv[1]) == -1) {
         perror("Owner mismatch:");   

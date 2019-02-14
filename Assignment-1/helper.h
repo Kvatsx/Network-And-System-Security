@@ -8,5 +8,6 @@ void PrintUserDetails(void);
 int checkFilePermissions(char * filename);
 int getPermission(char * permission);
 int AddAclEntry(char * filename);
+int checkPath(char * filename);
 
 #endif

@@ -12,6 +12,11 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
     PrintUserDetails();
+    
+    if (checkPath(argv[1]) == -1) {
+        printf("Error: Path\n");
+        exit(1);
+    }
 
     int permissions = checkFilePermissions(argv[1]);
     if (permissions != 0 && permissions != 2) {

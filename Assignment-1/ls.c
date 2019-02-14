@@ -64,6 +64,10 @@ int main(int argc, char const *argv[]) {
 
     }
     else {
+        if (checkPath(argv[1]) == -1) {
+            printf("Error: Path\n");
+            exit(1);
+        }
         n = scandir(argv[1], &names, NULL, alphasort);
         if ( n < 0 )
         {
