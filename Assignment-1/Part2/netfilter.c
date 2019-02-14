@@ -9,7 +9,7 @@
 
 static struct nf_hook_ops nfhook;
 
-unsigned int NmapFunc(unsigned int hookNum, struct sk_buff **skbuffer) {
+unsigned int NmapFunc(unsigned int hookNum, struct sk_buff *skbuffer) {
   printk("All packets accepted!\n");                                             
   return NF_ACCEPT;
 }
