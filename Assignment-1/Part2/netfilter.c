@@ -11,7 +11,7 @@
 
 static struct nf_hook_ops nfhook;
 
-unsigned int NmapFunc(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *)) {
+unsigned int NmapFunc(unsigned int hooknum, struct sk_buff *skb) {
 	struct iphdr * ip_header;
 	struct tcphdr * tcph;
 //	printk("ok1");
