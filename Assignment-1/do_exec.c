@@ -75,11 +75,11 @@ int main(int argc, char const *argv[]) {
     }
 
     if (fork() == 0) {
-        setuid(owner);
+        seteuid(owner);
         if (execvp(argv[1], temp) < 0) {
             perror("Execvp");
         }
-        setuid(RealUser);
+        seteuid(RealUser);
     }
     else {
         wait(NULL);
