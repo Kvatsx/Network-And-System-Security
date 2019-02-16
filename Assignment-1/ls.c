@@ -32,35 +32,17 @@ int main(int argc, char const *argv[]) {
 
     if ( argc == 1 )
 	{
-		n = scandir(".", &names, NULL, alphasort);
-		if ( n == NULL )
-		{
-			Error();
-		}
-		else if ( n < 0 )
-		{
-			SyntaxError(argv[0]);
-		}
-		else
-		{
-			int i=0;
-			while ( i < n )
-			{
-				char *p;
-				p = names[i]->d_name;
-				if ( p[0] == '.' )
-				{
-					i++;
-					continue;
-				}
+        struct dirent *name;
+        DIR * dir = opendir(".");
 
-                showFileDetails(names[i]->d_name, names[i]->d_name);
-				free(names[i]);
-				i++;
-			}
-			printf("\n");
-			free(names);
-		}
+        if (dir == NULL) {
+            Error();
+        }
+        while ((name = readdir(dir)) != NULL) {
+            // printf("d_name %s\n", name->d_name);
+            showFileDetails(name->d_name, name->d_name);
+        }
+        closedir(dir);
 
     }
     else {
@@ -68,38 +50,23 @@ int main(int argc, char const *argv[]) {
             printf("Error: Path\n");
             exit(1);
         }
-        // printf("argv[1]: %s\n", argv[1]);
-        n = scandir(argv[1], &names, NULL, alphasort);
-        if ( n < 0 )
-        {
+        struct dirent *name;
+        DIR * dir = opendir(argv[1]);
+
+        if (dir == NULL) {
             Error();
         }
-        else
-        {
-            int i=0;
-            while ( i < n )
-            {
-                char *p;
-                p = names[i]->d_name;
-                if ( p[0] == '.' )
-                {
-                    i++;
-                    continue;
-                }
-                // printf("%s\n", names[i]->d_name);  
-                char temp[1024];
-                memset(temp, '\0', sizeof(temp));
-                strcpy(temp, argv[1]);
-                // strcat(temp, "/");
-                strcat(temp, names[i]->d_name);
-                // printf("%s\n", temp);
-                showFileDetails(temp, names[i]->d_name);
-                free(names[i]);
-                i++;
-            }
-            free(names);
-            // printf("\n");
+        while ((name = readdir(dir)) != NULL) {
+            // printf("d_name %s\n", name->d_name);
+            char temp[1024];
+            memset(temp, '\0', sizeof(temp));
+            strcpy(temp, argv[1]);
+            // strcat(temp, "/");
+            strcat(temp, name->d_name);
+            // printf("%s\n", temp);
+            showFileDetails(temp, name->d_name);
         }
+        closedir(dir);
     }
     seteuid(getuid());
     PrintUserDetails();

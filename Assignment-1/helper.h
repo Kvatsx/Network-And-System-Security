@@ -11,5 +11,6 @@ int AddAclEntry(char * filename);
 int checkPath(char * filename);
 char * ActualPath(char * filename);
 // char * SlashParser(char * arr);
+int checkFolderPermission(char * filename);
 
 #endif

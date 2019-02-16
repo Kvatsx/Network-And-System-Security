@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include "helper.h"
 
 int main(int argc, char const *argv[]) {
@@ -25,25 +26,23 @@ int main(int argc, char const *argv[]) {
     }
     // printf("Permissions: %d\n", permissions);
 
-    FILE * fp;
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
+    int fp;
+    char buf[1024];
+    memset(buf, '\0', sizeof(buf));
 
-    fp = fopen(argv[1], "r");
-    if (fp == NULL) {
+    int len = 0;
+
+    fp = open(argv[1], O_RDONLY);
+    if (fp < 0) {
         perror("File Doesn't exist");
         exit(1);
     }
-    while ((read = getline(&line, &len, fp)) != -1) {
+    while ((len = read(fp, &buf, sizeof(buf))) > 0) {
         // printf("%zu\n", read);
-        printf("%s", line);
+        printf("%s\n", buf);
     }
 
-    fclose(fp);
-    if (line) {
-        free(line);
-    }
+    close(fp);
 
     seteuid(getuid());
     PrintUserDetails();

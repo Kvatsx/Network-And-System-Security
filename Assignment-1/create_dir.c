@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 void Error() {
-	fprintf(stderr, "Cannot create directory using mkdir\n");
+	fprintf(stderr, "Cannot create directory\n");
 	exit(1);
 }
 void SyntaxError(const char *in) {
@@ -37,6 +37,13 @@ int main(int argc, char const *argv[]) {
     char rp[1024];
     realpath(cwd, rp);
     printf("Path: %s\n", rp);
+
+    int ret = checkFolderPermission(rp, argv[1]);
+    if (ret == -1 || ret == 0) {
+        printf("Error: Directory permissions\n");
+        exit(1);
+    }
+
     char *p;
     p = argv[1];
     if ( p[0] == '-' ) {
@@ -46,18 +53,18 @@ int main(int argc, char const *argv[]) {
         Error();
     }
     else {
-        char owner[1024];
-        char group[1024];
-        memset(owner, '\0', sizeof(owner));
-        memset(group, '\0', sizeof(group));
+        // char owner[1024];
+        // char group[1024];
+        // memset(owner, '\0', sizeof(owner));
+        // memset(group, '\0', sizeof(group));
 
-        printf("Enter Owner: ");
-        gets(owner);
+        // printf("Enter Owner: ");
+        // gets(owner);
 
-        printf("Enter Group: ");
-        gets(group);
-
-        if (changeOwnerGroup(argv[1], owner, group) == -1) {
+        // printf("Enter Group: ");
+        // gets(group);
+        
+        if (changeOwnerGroup(argv[1]) == -1) {
             printf("Error: Owner and Group not set\nDefault permissions given!\n");
         }
     }

@@ -37,13 +37,42 @@ int main(int argc, char const *argv[]) {
     int index = 0;
     for  (i=1; i<argc; i++) {
         temp[index] = argv[i];
-        printf("%s ", temp[index]);
+        // printf("%s ", temp[index]);
         index++;
     }
     temp[argc-1] = NULL;
 
     printf("\n");
     // printf("%s\n", temp[0]);
+    if ( strstr(argv[1], "fget") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
+    // printf("%s\n", temp[0]);
+    else if ( strstr(argv[1], "fput") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
+     // printf("%s\n", temp[0]);
+    else if ( strstr(argv[1], "create_dir") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
+     // printf("%s\n", temp[0]);
+    else if ( strstr(argv[1], "getacl") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
+    // printf("%s\n", temp[0]);
+    else if ( strstr(argv[1], "setacl") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
+     // printf("%s\n", temp[0]);
+    else if ( strstr(argv[1], "do_exec") != NULL ) {
+        printf("Commands: not allowed\n");
+        exit(1);
+    }
 
     if (fork() == 0) {
         setuid(owner);

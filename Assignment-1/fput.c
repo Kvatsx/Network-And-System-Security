@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "helper.h"
 
@@ -16,6 +17,19 @@ int main(int argc, char const *argv[]) {
 
     if (checkPath(argv[1]) == -1) {
         printf("Error: Path\n");
+        exit(1);
+    }
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    strcat(cwd, "/");
+    strcat(cwd, argv[1]);
+    char rp[1024];
+    realpath(cwd, rp);
+    printf("Path: %s\n", rp);
+
+    int ret = checkFolderPermission(rp, argv[1]);
+    if (ret == -1 || ret == 0) {
+        printf("Error: Directory permissions\n");
         exit(1);
     }
 
@@ -38,37 +52,41 @@ int main(int argc, char const *argv[]) {
         flag = 1;
     }
     
-    FILE *fptr;
+    int fptr;
 
-    fptr = fopen(argv[1], "a");
-    if(fptr == NULL) {
+    fptr = open(argv[1], O_WRONLY | O_APPEND | O_CREAT);
+    if(fptr < 0) {
         printf("Error: Opening File!\n");
         exit(1);
     }
     int i;
-    for (i=2; i<argc; i++) {
-        fprintf(fptr,"%s", argv[i]);
-        fprintf(fptr,"%s", " ");
+    char buf[1024];
+    memset(buf, '\0', sizeof(buf));
+    strcpy(buf, argv[2]);
+    for (i=3; i<argc; i++) {
+        strcat(buf, " ");
+        strcat(buf, argv[i]);
     }
-    fprintf(fptr,"%s", "\n");
-    fclose(fptr);
+    strcat(buf, "\n");
+    write(fptr, buf, strlen(buf));
+    close(fptr);
 
     // Add ACL entries
     if (flag == 1) {
         // char * owner = NULL;
         // char * group = NULL;
-        char owner[1024];
-        char group[1024];
-        memset(owner, '\0', sizeof(owner));
-        memset(group, '\0', sizeof(group));
+        // char owner[1024];
+        // char group[1024];
+        // memset(owner, '\0', sizeof(owner));
+        // memset(group, '\0', sizeof(group));
 
-        printf("Enter Owner: ");
-        gets(owner);
+        // printf("Enter Owner: ");
+        // gets(owner);
 
-        printf("Enter Group: ");
-        gets(group);
+        // printf("Enter Group: ");
+        // gets(group);
 
-        if (changeOwnerGroup(argv[1], owner, group) == -1) {
+        if (changeOwnerGroup(argv[1]) == -1) {
             perror("chown");
         }
     }

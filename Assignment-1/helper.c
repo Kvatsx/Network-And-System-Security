@@ -157,14 +157,14 @@ void showAclList(char * filename) {
 // }
 
 int checkPath(char * filename) {
-    // char path[1024];
-    // memset(path, '\0', sizeof(path));
+    char path[1024];
+    memset(path, '\0', sizeof(path));
 
-    // char * ret = realpath(filename, path);
-    // // printf("%s\n", path);
-    // if (strstr(path, "/fakeslash/fakehome") == NULL) {
-    //     return -1;
-    // }
+    char * ret = realpath(filename, path);
+    // printf("%s\n", path);
+    if (strstr(path, "/fakeslash/fakehome") == NULL) {
+        return -1;
+    }
     return 1;
 }
 
@@ -239,12 +239,16 @@ int checkFilePermissions(char * filename) {
     struct passwd * pwd = getpwuid(uid);
     gid_t gid = getgid();
     struct group * gwd = getgrgid(gid);
+    // printf("uid %d\n", uid);
 
+    // printf("filename: %s\n", filename);
     struct stat sb;
     if (stat(filename, &sb) == -1) {
         perror("stat");
         return;
     }
+    // printf("uid %d\n", sb.st_uid);
+
     struct passwd * pwd_owner = getpwuid(sb.st_uid);
     struct group * gwd_owner = getgrgid(sb.st_gid);
 
@@ -262,7 +266,8 @@ int checkFilePermissions(char * filename) {
     if ((size = getxattr(filename, key, value, size)) == -1) {
         // if Name not found in ACL then check for owner and Group.
         // printf("LOL\n");
-        if ( strcmp(pwd_owner->pw_name, pwd->pw_name) == 0 ) {
+        // printf("%s %s\n", pwd_owner->pw_name, pwd->pw_name);
+        if ( uid == sb.st_uid ) {
             if ((sb.st_mode & S_IRUSR) && (sb.st_mode &  S_IWUSR)) {
                 return 2;
             }
@@ -276,8 +281,8 @@ int checkFilePermissions(char * filename) {
         // printf("LOL2\n");
 
         // Check for group permissons
-        if ( strcmp(gwd_owner->gr_name, gwd->gr_name) == 0 ) {
-            if ((sb.st_mode & S_IRGRP) && (sb.st_mode &  S_IWGRP)) {
+        if ( gid == sb.st_gid ) {
+            if ((sb.st_mode & S_IRGRP) && (sb.st_mode & S_IWGRP)) {
                 return 2;
             }
             else if ( sb.st_mode & S_IRGRP ) {
@@ -319,12 +324,11 @@ int AddAclEntry(char * filename, char * owner, char * group) {
     return 0;
 }
 
-int changeOwnerGroup(char * filename, char * owner, char * group) {
+int changeOwnerGroup(char * filename) {
     // owner = strtok(owner, "\n");
     // group = strtok(group, "\n");
-
-    struct passwd * pwd = getpwnam(owner);
-    struct group * gwd = getgrnam(group);
+    struct passwd * pwd = getpwuid(getuid());
+    struct group * gwd = getgrgid(pwd->pw_gid);
     // printf("owner: %s\ngroup: %s\n", owner, group);
     // printf("%s %s\n", pwd->pw_name, gwd->gr_name);
     if ( pwd != NULL && gwd != NULL ) {
@@ -334,24 +338,38 @@ int changeOwnerGroup(char * filename, char * owner, char * group) {
         }
         return ret;
     }
-    // else {
-    //     struct stat sb;
-    //     char cwd[1024];
-    //     getcwd(cwd, sizeof(cwd));
-    //     if (stat(cwd, &sb) == -1) {
-    //         perror("stat");
-    //         return;
-    //     }
-    //     // strcat(cwd, "/");
-    //     // strcat(cwd, filename);
-    //     // printf("Path: %s\n", cwd);
-    //     pwd = getpwuid(sb.st_uid);
-    //     gwd = getgrgid(sb.st_gid);
-    //     int ret = chown(cwd, pwd->pw_uid, gwd->gr_gid);
-    //     if ( ret == -1 ) {
-    //         perror("chown");
-    //     }
-    //     return ret;
-    // }
     return -1;
+}
+int giveDir(char * path) {
+    int count = 0;
+    int flag = 0;
+    int i;
+    for(i=0; i<strlen(path); i++) {
+        if ( path[i] == '/') {
+            count = 0;
+        }
+        count++;
+        // printf("%d\n", count);
+    }
+    return count;
+}
+
+int checkFolderPermission(char * filename, char * original) {
+    char buf[1024];
+    memset(buf, '\0', sizeof(buf));
+    int count = giveDir(filename);
+    // printf("%d\n", count);
+    strncpy(buf, filename, strlen(filename)-count);
+    // strcat(buf, "/../");
+    // struct stat sb;
+    // if (stat(buf, &sb) == -1) {
+    //     perror("stat");
+    //     return;
+    // }
+    // printf("buf: %s\n", buf);
+    char rel[1024];
+    realpath(buf, rel);
+    int per = checkFilePermissions(rel);
+    // printf("%d\n", per);
+    return per;
 }
