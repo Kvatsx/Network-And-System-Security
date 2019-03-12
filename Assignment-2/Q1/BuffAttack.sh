@@ -1,3 +1,3 @@
 rm input
-python ../CustomPayloadGenerator.py > input
+python Extra/CustomPayloadGenerator.py > input
 ./victim < input

