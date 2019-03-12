@@ -3,8 +3,8 @@ from struct import pack
 # Command used to extract these addresses
 # ROPgadget --binary /lib/x86_64-linux-gnu/libc.so.6 --only "pop|ret" | grep rdx
 
-buff_base = 0x7fffffffdcf0  # gdb
-# buff_base = 0x7fffffffe440
+# buff_base = 0x7fffffffdcf0  # gdb
+buff_base = 0x7fffffffe440 # Bash
 # buff_base = 0x7fffffffdd00    # bash
 # buff_base = 2251799813545200
 
