@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "helper.h"
+#include <openssl/evp.h>
 
 int main(int argc, char const *argv[]) {
 
@@ -74,15 +75,15 @@ int main(int argc, char const *argv[]) {
     strcat(buf, "\n");
     
     // -----------------------------------------------
-    
+
     unsigned char *out;
     out = (unsigned char *) malloc(sizeof(unsigned char) * (strlen(buf)+ EVP_MAX_BLOCK_LENGTH));
-    getEncrypted(buf, getuid(), 1, out);
-    memset(buf, "\0", sizeof(buf));
-    strcpy(buf, out);
+    do_crypt(buf, getuid(), 1, out);
+    // memset(buf, "\0", sizeof(buf));
+    // strcpy(buf, out);
 
     // -----------------------------------------------
-    write(fptr, buf, strlen(buf));
+    write(fptr, out, strlen(out));
     close(fptr);    
 
     if (flag == 1) {

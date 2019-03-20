@@ -1,4 +1,7 @@
 #include "helper.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <pwd.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -8,6 +11,7 @@
 #include <time.h>
 #include <sys/xattr.h>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 int checkCurrentUser(char * filename, int type) {
     uid_t calling_user;
@@ -427,45 +431,45 @@ unsigned char * getKey(uid_t uid) {
     return NULL;
 }
 
+// // encdec 1 Encryption, 0 Decryption
+// char * getEncrypted(char * input, uid_t uid, int encdec) {
+//     unsigned char *key;
+//     unsigned char *iv;
+//     key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
+//     iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+//     key = getKey(uid);
+//     iv = getKey(uid);
+
+//     unsigned char output[1024 + EVP_MAX_BLOCK_LENGTH];
+//     memset(output, '\0', strlen(output));
+//     int input_len, output_len;
+
+//     EVP_CIPHER_CTX *ctx;
+//     ctx = EVP_CIPHER_CTX_new();
+//     EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
+//     OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+//     OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+
+//     EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+
+//     if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
+//         EVP_CIPHER_CTX_free(ctx);
+//         return NULL;
+//     }
+
+//     if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
+//         EVP_CIPHER_CTX_free(ctx);
+//         return NULL;
+//     }
+//     EVP_CIPHER_CTX_free(ctx);
+
+//     return output;
+
+// }
+
 // encdec 1 Encryption, 0 Decryption
-char * getEncrypted(char * input, uid_t uid, int encdec) {
-    unsigned char *key;
-    unsigned char *iv;
-    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
-    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
-
-    key = getKey(uid);
-    iv = getKey(uid);
-
-    unsigned char output[1024 + EVP_MAX_BLOCK_LENGTH];
-    memset(output, '\0', strlen(output));
-    int input_len, output_len;
-
-    EVP_CIPHER_CTX *ctx;
-    ctx = EVP_CIPHER_CTX_new();
-    EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
-    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
-    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
-
-    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
-
-    if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
-        EVP_CIPHER_CTX_free(ctx);
-        return NULL;
-    }
-
-    if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
-        EVP_CIPHER_CTX_free(ctx);
-        return NULL;
-    }
-    EVP_CIPHER_CTX_free(ctx);
-
-    return output;
-
-}
-
-// encdec 1 Encryption, 0 Decryption
-unsigned char * getEncrypted(char * input, uid_t uid, int encdec, unsigned char * out) {
+unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * out) {
     unsigned char *key;
     // unsigned char *iv;
 
@@ -477,7 +481,7 @@ unsigned char * getEncrypted(char * input, uid_t uid, int encdec, unsigned char 
     unsigned char iv[] = "1234567887654321";
     // printf("Key %s\n", key);
     // printf("Iv %s\n", iv);
-    
+
     unsigned char * output[strlen(input) + EVP_MAX_BLOCK_LENGTH];
     memset(output, '\0', strlen(output));
     int input_len, output_len;
@@ -507,5 +511,35 @@ unsigned char * getEncrypted(char * input, uid_t uid, int encdec, unsigned char 
     EVP_CIPHER_CTX_free(ctx);
 
     return output;
+
+}
+
+// http://www.askyb.com/cpp/openssl-hmac-hasing-example-in-cpp/
+// https://www.openssl.org/docs/man1.1.0/man3/HMAC.html
+int create_Hmac(char * input, uid_t uid, char * filename) {
+    unsigned char *key;
+    // unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
+    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    key = getKey(uid);
+    // iv = getKey(uid);
+    unsigned char iv[] = "1234567887654321";
+    // printf("Key %s\n", key);
+    // printf("Iv %s\n", iv);
+
+    unsigned char* result;
+    unsigned int len = 20;
+    result = (unsigned char*)malloc(sizeof(char) * len);
+
+    HMAC_CTX ctx;
+    ctx = HMAC_CTX_new();
+    HMAC_CTX_init(&ctx);
+
+    HMAC_Init_ex(&ctx, key, strlen(key), EVP_sha1(), NULL);
+    HMAC_Update(&ctx, (unsigned char*)&data, strlen(data));
+    HMAC_Final(&ctx, result, &len);
+    HMAC_CTX_cleanup(&ctx);
 
 }
