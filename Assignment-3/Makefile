@@ -41,6 +41,12 @@ $(TARGET6): $(OBJFILES6)
 $(TARGET7): $(OBJFILES7)
 	$(CC) -o $(TARGET7) $(OBJFILES7)
 
+test:
+	gcc check.c -g -lcrypto -Wall
+	sudo chown root:root a.out
+	sudo chmod u+s a.out
+	./a.out
+
 clean:
 	rm -f $(OBJFILES1) $(TARGET1) *~
 	rm -f $(OBJFILES2) $(TARGET2) *~

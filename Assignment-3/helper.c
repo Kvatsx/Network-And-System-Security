@@ -1,11 +1,13 @@
 #include "helper.h"
 #include <pwd.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <grp.h>
 #include <time.h>
 #include <sys/xattr.h>
+#include <openssl/evp.h>
 
 int checkCurrentUser(char * filename, int type) {
     uid_t calling_user;
@@ -374,4 +376,136 @@ int checkFolderPermission(char * filename, char * original) {
     int per = checkFilePermissions(rel);
     // printf("%d\n", per);
     return per;
+}
+
+// https://www.openssl.org/docs/manmaster/man3/PKCS5_PBKDF2_HMAC_SHA1.html
+// https://stackoverflow.com/questions/9771212/how-to-use-pkcs5-pbkdf2-hmac-sha1
+
+unsigned char * getKey(uid_t uid) {
+    struct passwd * pwd = getpwuid(uid);
+    
+    FILE * fd;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fd = fopen("/etc/shadow", "r");
+    if (fd == NULL) {
+        printf("File could not be opened.\n");
+        perror("open");
+        return NULL;
+    }
+
+    while ((read = getline(&line, &len, fd)) != -1) {
+        // printf("%s", line);
+        char * token = strtok(line, ":");
+        // printf("name: %s\nuser: %s\n", token,  pwd->pw_name);
+        // printf("User: %s\n", pwd->pw_name);
+
+        if (strcmp(token, pwd->pw_name) == 0) {
+            token = strtok(NULL, ":");
+            int i;
+            unsigned char *out;
+
+            out = (unsigned char *) malloc(sizeof(unsigned char) * 16);
+
+            // printf("pass: %s\n", token);
+
+            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 1, 16, out) != 0 ) {
+                // printf("out: "); 
+                // for(i=0;i<16;i++) { 
+                //     printf("%02x", out[i]); 
+                // } 
+                // printf("\n");
+            }
+            else {
+                fprintf(stderr, "PKCS5_PBKDF2_HMAC_SHA1 failed\n");
+            }
+            return out;
+        }
+    }
+    return NULL;
+}
+
+// encdec 1 Encryption, 0 Decryption
+char * getEncrypted(char * input, uid_t uid, int encdec) {
+    unsigned char *key;
+    unsigned char *iv;
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    key = getKey(uid);
+    iv = getKey(uid);
+
+    unsigned char output[1024 + EVP_MAX_BLOCK_LENGTH];
+    memset(output, '\0', strlen(output));
+    int input_len, output_len;
+
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+
+    if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
+        EVP_CIPHER_CTX_free(ctx);
+        return NULL;
+    }
+
+    if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
+        EVP_CIPHER_CTX_free(ctx);
+        return NULL;
+    }
+    EVP_CIPHER_CTX_free(ctx);
+
+    return output;
+
+}
+
+// encdec 1 Encryption, 0 Decryption
+unsigned char * getEncrypted(char * input, uid_t uid, int encdec, unsigned char * out) {
+    unsigned char *key;
+    // unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
+    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    key = getKey(uid);
+    // iv = getKey(uid);
+    unsigned char iv[] = "1234567887654321";
+    // printf("Key %s\n", key);
+    // printf("Iv %s\n", iv);
+    
+    unsigned char * output[strlen(input) + EVP_MAX_BLOCK_LENGTH];
+    memset(output, '\0', strlen(output));
+    int input_len, output_len;
+
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+
+    EVP_CipherInit_ex(ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+
+    if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
+        perror("Here");
+        EVP_CIPHER_CTX_free(ctx);
+        return NULL;
+    }
+
+    strcpy(out, output);
+
+    // if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
+    //     perror("where");
+    //     EVP_CIPHER_CTX_free(ctx);
+    //     return NULL;
+    // }
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    return output;
+
 }
