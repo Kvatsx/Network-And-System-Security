@@ -81,7 +81,15 @@ int main(int argc, char const *argv[]) {
     do_crypt(buf, getuid(), 1, out);
     // memset(buf, "\0", sizeof(buf));
     // strcpy(buf, out);
-
+    // unsigned char * result;
+    create_Hmac(out, getuid(), argv[1]);
+    
+    // int it=0;
+    // for(it=0;it<strlen(result);it++) { 
+    //     printf("%02x", result[it]); 
+    // } 
+    // printf("\n");
+    
     // -----------------------------------------------
     write(fptr, out, strlen(out));
     close(fptr);    

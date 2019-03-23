@@ -58,7 +58,7 @@
 # 	rm -f $(OBJFILES7) $(TARGET7) *~
 
 
-all: setacl getacl ls fget fput create_dir do_exec fput_encrypt
+all: setacl getacl ls fget fput create_dir do_exec fput_encrypt fget_decrypt
 
 setacl: setacl.o helper.o
 	gcc -o setacl setacl.o helper.o -g -lcrypto -Wall

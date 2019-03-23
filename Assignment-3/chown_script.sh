@@ -1,7 +1,9 @@
-chown fakeroot:fakeoot create_dir
-chown fakeroot:fakeoot fget
-chown fakeroot:fakeoot fput
-chown fakeroot:fakeoot ls
-chown fakeroot:fakeoot do_exec
-chown fakeroot:fakeoot getacl
-chown fakeroot:fakeoot setacl
+chown fakeroot:fakeroot create_dir
+chown fakeroot:fakeroot fget
+chown fakeroot:fakeroot fput
+chown fakeroot:fakeroot ls
+chown fakeroot:fakeroot do_exec
+chown fakeroot:fakeroot getacl
+chown fakeroot:fakeroot setacl
+chown fakeroot:fakeroot fput_encrypt
+chown fakeroot:fakeroot fget_decrypt

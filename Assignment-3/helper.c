@@ -337,6 +337,7 @@ int changeOwnerGroup(char * filename) {
     // group = strtok(group, "\n");
     struct passwd * pwd = getpwuid(getuid());
     struct group * gwd = getgrgid(pwd->pw_gid);
+    // printf("USeR: %s\n", pwd->pw_name);
     // printf("owner: %s\ngroup: %s\n", owner, group);
     // printf("%s %s\n", pwd->pw_name, gwd->gr_name);
     if ( pwd != NULL && gwd != NULL ) {
@@ -516,14 +517,15 @@ unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * ou
 
 // http://www.askyb.com/cpp/openssl-hmac-hasing-example-in-cpp/
 // https://www.openssl.org/docs/man1.1.0/man3/HMAC.html
-int create_Hmac(char * input, uid_t uid, char * filename) {
+void create_Hmac(char * input, uid_t uid, char * filename) {
     unsigned char *key;
     // unsigned char *iv;
 
     key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
     // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
-
+    printf("Nano\n");
     key = getKey(uid);
+    printf("BAM\n%d\n", strlen(key));
     // iv = getKey(uid);
     unsigned char iv[] = "1234567887654321";
     // printf("Key %s\n", key);
@@ -531,15 +533,36 @@ int create_Hmac(char * input, uid_t uid, char * filename) {
 
     unsigned char* result;
     unsigned int len = 20;
-    result = (unsigned char*)malloc(sizeof(char) * len);
+    // result = (unsigned char*)malloc(sizeof(char) * EVP_MAX_MD_SIZE);
 
-    HMAC_CTX ctx;
-    ctx = HMAC_CTX_new();
-    HMAC_CTX_init(&ctx);
+    // HMAC_CTX *ctx;
+    // ctx = HMAC_CTX_new();
+    // HMAC_CTX_init(&ctx);
 
-    HMAC_Init_ex(&ctx, key, strlen(key), EVP_sha1(), NULL);
-    HMAC_Update(&ctx, (unsigned char*)&data, strlen(data));
-    HMAC_Final(&ctx, result, &len);
-    HMAC_CTX_cleanup(&ctx);
+    // HMAC_Init_ex(&ctx, key, strlen(key), EVP_sha1(), NULL);
+    // HMAC_Update(&ctx, (unsigned char*)&input, strlen(input));
+    // HMAC_Final(&ctx, result, &len);
+    // HMAC_CTX_cleanup(&ctx);
 
+    result = HMAC(EVP_sha1(), key, strlen(key), input, strlen(input), NULL, NULL);
+    // result = HMAC(EVP_sha1(), key, strlen(key), input, strlen(input), result, sizeof(result));
+    printf("Res: %s\n", result);
+
+    char newFile[5000];
+    memset(newFile, "\0", sizeof(newFile));
+    strcpy(newFile, filename);
+    strcat(newFile, ".sign");
+
+    int fptr;
+    fptr = open(newFile, O_WRONLY | O_CREAT);
+    if(fptr < 0) {
+        printf("Error: Opening File!\n");
+        exit(1);
+    }
+    write(fptr, result, strlen(result));
+    close(fptr);
+    if (changeOwnerGroup(newFile) == -1) {
+        perror("chown");
+    }
+    return;
 }

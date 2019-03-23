@@ -5,3 +5,5 @@ chmod u+s ls
 chmod u+s do_exec
 chmod u+s getacl
 chmod u+s setacl
+chmod u+s fput_encrypt
+chmod u+s fget_decrypt
