@@ -7,3 +7,5 @@ chmod u+s getacl
 chmod u+s setacl
 chmod u+s fput_encrypt
 chmod u+s fget_decrypt
+chmod u+s fsign
+chmod u+s fverify

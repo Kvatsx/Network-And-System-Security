@@ -7,3 +7,5 @@ chown fakeroot:fakeroot getacl
 chown fakeroot:fakeroot setacl
 chown fakeroot:fakeroot fput_encrypt
 chown fakeroot:fakeroot fget_decrypt
+chown fakeroot:fakeroot fsign
+chown fakeroot:fakeroot fverify

@@ -337,7 +337,7 @@ int changeOwnerGroup(char * filename) {
     // group = strtok(group, "\n");
     struct passwd * pwd = getpwuid(getuid());
     struct group * gwd = getgrgid(pwd->pw_gid);
-    // printf("USeR: %s\n", pwd->pw_name);
+    printf("USeR: %s\n", pwd->pw_name);
     // printf("owner: %s\ngroup: %s\n", owner, group);
     // printf("%s %s\n", pwd->pw_name, gwd->gr_name);
     if ( pwd != NULL && gwd != NULL ) {
@@ -553,8 +553,21 @@ void create_Hmac(char * input, uid_t uid, char * filename) {
     strcpy(newFile, filename);
     strcat(newFile, ".sign");
 
+    // FILE *fptr;
+
+    // fptr = fopen(newFile, "w+");
+    // if(fptr == NULL)
+    // {
+    //     printf("Error!");
+    //     exit(1);
+    // }
+
+    // fprintf(fptr,"%s", result);
+    // // fprintf(fptr,"%s", "\n");
+    // fclose(fptr);
+
     int fptr;
-    fptr = open(newFile, O_WRONLY | O_CREAT);
+    fptr = open(newFile, O_CREAT|O_WRONLY|O_TRUNC);
     if(fptr < 0) {
         printf("Error: Opening File!\n");
         exit(1);
@@ -565,4 +578,63 @@ void create_Hmac(char * input, uid_t uid, char * filename) {
         perror("chown");
     }
     return;
+}
+
+int HMAC_Verify(char * Filename, uid_t uid) {
+    unsigned char *key;
+    // unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
+    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    // printf("Nano\n");
+    key = getKey(uid);
+    // printf("BAM\n%d\n", strlen(key));
+    // iv = getKey(uid);
+    unsigned char iv[] = "1234567887654321";
+    // printf("Key %s\n", key);
+    // printf("Iv %s\n", iv);
+
+    char Input[6500];
+    int fp;
+    char buf[1024];
+    memset(buf, '\0', sizeof(buf));
+    memset(Input, '\0', sizeof(Input));
+    int len = 0;
+    fp = open(Filename, O_RDONLY);
+    if (fp < 0) {
+        perror("File Doesn't exist");
+        exit(1);
+    }
+    while ((len = read(fp, &buf, sizeof(buf))) > 0) {
+        strcat(Input, buf);
+    }
+    close(fp);
+
+    unsigned char* result;
+    // result = (unsigned char*)malloc(sizeof(char) * EVP_MAX_MD_SIZE);
+
+    result = HMAC(EVP_sha1(), key, strlen(key), Input, strlen(Input), NULL, NULL);
+    // result = HMAC(EVP_sha1(), key, strlen(key), input, strlen(input), result, sizeof(result));
+    // printf("Res: %s\n", result);
+    // --------------------------------------
+    char newFile[5000];
+    memset(newFile, '\0', sizeof(newFile));
+    strcpy(newFile, Filename);
+    strcat(newFile, ".sign");
+    memset(buf, '\0', sizeof(buf));
+    memset(Input, '\0', sizeof(Input));
+    fp = open(newFile, O_RDONLY);
+    if (fp < 0) {
+        perror("File Doesn't exist");
+        exit(1);
+    }
+    while ((len = read(fp, &buf, sizeof(buf))) > 0) {
+        strcat(Input, buf);
+    }
+    close(fp);
+
+    if (strcmp(Input, result) == 0) {
+        return 1;
+    }
+    return -1;
 }

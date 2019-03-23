@@ -58,7 +58,7 @@
 # 	rm -f $(OBJFILES7) $(TARGET7) *~
 
 
-all: setacl getacl ls fget fput create_dir do_exec fput_encrypt fget_decrypt
+all: setacl getacl ls fget fput create_dir do_exec fput_encrypt fget_decrypt fsign fverify
 
 setacl: setacl.o helper.o
 	gcc -o setacl setacl.o helper.o -g -lcrypto -Wall
@@ -87,6 +87,12 @@ fput_encrypt: fput_encrypt.o helper.o
 fget_decrypt: fget_decrypt.o helper.o
 	gcc -o fget_decrypt fget_decrypt.o helper.o -g -lcrypto -Wall
 
+fsign: fsign.o helper.o
+	gcc -o fsign fsign.o helper.o -g -lcrypto -Wall
+
+fverify: fverify.o helper.o
+	gcc -o fverify fverify.o helper.o -g -lcrypto -Wall
+
 test:
 	gcc check.c -g -lcrypto -Wall
 	sudo chown root:root a.out
@@ -103,5 +109,7 @@ clean:
 	rm -f do_exec.o helper.o do_exec *~
 	rm -f fput_encrypt.o helper.o fput_encrypt *~
 	rm -f fget_decrypt.o helper.o fget_decrypt *~
+	rm -f fsign.o helper.o fsign *~
+	rm -f fverify.o helper.o fverify *~
 
 

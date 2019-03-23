@@ -63,11 +63,20 @@ int main(int argc, char const *argv[]) {
         perror("stat");
         return;
     }
+
+    if (HMAC_Verify(argv[1], sb.st_uid) < 0) {
+        printf("HMAC: Error\n");
+        seteuid(getuid());
+        PrintUserDetails();        
+        return 0;
+    }
+    printf("HMAC: Correctly Matched!\n");
+ 
     struct passwd * pwd_owner = getpwuid(sb.st_uid);
     // printf("User: %s\n", pwd_owner->pw_name);
     unsigned char *out;
     out = (unsigned char *) malloc(sizeof(unsigned char) * (strlen(buf)+ EVP_MAX_BLOCK_LENGTH));
-    do_crypt(buf, sb.st_uid, 0, out);
+    do_crypt(Input, sb.st_uid, 0, out);
     printf("%s\n", out);
 
     // ----------------------------------------------------------
