@@ -75,8 +75,9 @@ int main(int argc, char const *argv[]) {
     struct passwd * pwd_owner = getpwuid(sb.st_uid);
     // printf("User: %s\n", pwd_owner->pw_name);
     unsigned char *out;
-    out = (unsigned char *) malloc(sizeof(unsigned char) * (strlen(buf)+ EVP_MAX_BLOCK_LENGTH));
-    do_crypt(Input, sb.st_uid, 0, out);
+    out = (unsigned char *) malloc(sizeof(unsigned char) * (strlen(buf)+1));
+    memset(out, "\0", sizeof(out));
+    do_dec(Input, sb.st_uid, 0, out);
     printf("%s\n", out);
 
     // ----------------------------------------------------------

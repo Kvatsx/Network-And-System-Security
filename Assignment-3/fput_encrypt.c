@@ -78,7 +78,7 @@ int main(int argc, char const *argv[]) {
 
     unsigned char *out;
     out = (unsigned char *) malloc(sizeof(unsigned char) * (strlen(buf)+ EVP_MAX_BLOCK_LENGTH));
-    do_crypt(buf, getuid(), 1, out);
+    do_enc(buf, getuid(), 1, out);
     // memset(buf, "\0", sizeof(buf));
     // strcpy(buf, out);
     // unsigned char * result;

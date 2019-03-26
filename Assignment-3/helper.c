@@ -386,7 +386,7 @@ int checkFolderPermission(char * filename, char * original) {
 // https://www.openssl.org/docs/manmaster/man3/PKCS5_PBKDF2_HMAC_SHA1.html
 // https://stackoverflow.com/questions/9771212/how-to-use-pkcs5-pbkdf2-hmac-sha1
 
-unsigned char * getKey(uid_t uid) {
+void getKeyIv(uid_t uid, unsigned char * key, unsigned char * iv) {
     struct passwd * pwd = getpwuid(uid);
     
     FILE * fd;
@@ -402,86 +402,104 @@ unsigned char * getKey(uid_t uid) {
     }
 
     while ((read = getline(&line, &len, fd)) != -1) {
-        // printf("%s", line);
-        char * token = strtok(line, ":");
-        // printf("name: %s\nuser: %s\n", token,  pwd->pw_name);
-        // printf("User: %s\n", pwd->pw_name);
 
+        char * token = strtok(line, ":");
         if (strcmp(token, pwd->pw_name) == 0) {
             token = strtok(NULL, ":");
             int i;
-            unsigned char *out;
 
-            out = (unsigned char *) malloc(sizeof(unsigned char) * 16);
-
-            // printf("pass: %s\n", token);
-
-            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 1, 16, out) != 0 ) {
-                // printf("out: "); 
-                // for(i=0;i<16;i++) { 
-                //     printf("%02x", out[i]); 
-                // } 
-                // printf("\n");
+            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 100, 32, key) == 0 ) {
+                perror("PBKDF");
             }
-            else {
-                fprintf(stderr, "PKCS5_PBKDF2_HMAC_SHA1 failed\n");
+            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, iv) == 0 ) {
+                perror("PBKDF");
             }
-            return out;
+            // close(fd);
+            // return out;
         }
     }
-    return NULL;
+    close(fd);
+    // return NULL;
 }
 
-// // encdec 1 Encryption, 0 Decryption
-// char * getEncrypted(char * input, uid_t uid, int encdec) {
-//     unsigned char *key;
-//     unsigned char *iv;
-//     key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
-//     iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+void do_enc(char * input, uid_t uid, int encdec, unsigned char * out) {
+    int outlen, tmplen;
 
-//     key = getKey(uid);
-//     iv = getKey(uid);
+    unsigned char *key;
+    unsigned char *iv;
 
-//     unsigned char output[1024 + EVP_MAX_BLOCK_LENGTH];
-//     memset(output, '\0', strlen(output));
-//     int input_len, output_len;
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
 
-//     EVP_CIPHER_CTX *ctx;
-//     ctx = EVP_CIPHER_CTX_new();
-//     EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
-//     OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
-//     OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+    getKeyIv(uid, key, iv);
 
-//     EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+    EVP_CIPHER_CTX *ctx;
 
-//     if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
-//         EVP_CIPHER_CTX_free(ctx);
-//         return NULL;
-//     }
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-//     if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
-//         EVP_CIPHER_CTX_free(ctx);
-//         return NULL;
-//     }
-//     EVP_CIPHER_CTX_free(ctx);
+    if(!EVP_EncryptUpdate(ctx, out, &outlen, input, strlen(input)))
+    {
+        return 0;
+    }
 
-//     return output;
+    if(!EVP_EncryptFinal_ex(ctx, out + outlen, &tmplen))
+    {
+        return 0;
+    }
+    outlen += tmplen;
+    EVP_CIPHER_CTX_free(ctx);
+    out[outlen] = "\n";
+    printf("OUTPUT: %s\n", out);
+}
 
-// }
+void do_dec(char * input, uid_t uid, int encdec, unsigned char * out) {
+    int outlen, tmplen;
+
+    unsigned char *key;
+    unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    getKeyIv(uid, key, iv);
+
+    EVP_CIPHER_CTX *ctx;
+
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
+
+    if(!EVP_DecryptUpdate(ctx, out, &outlen, input, strlen(input)))
+    {
+        perror("dec update");
+        return;
+    }
+
+    // if(!EVP_DecryptFinal_ex(ctx, out + outlen, &tmplen))
+    // {
+    //     perror("Dec Final");
+    //     return;
+    // }
+
+    // printf("OUTPUT: %d\n", outlen);
+    // outlen += tmplen;
+    // out[outlen] = "\0";
+    EVP_CIPHER_CTX_free(ctx);
+}
 
 // encdec 1 Encryption, 0 Decryption
 unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * out) {
     unsigned char *key;
-    // unsigned char *iv;
+    unsigned char *iv;
 
-    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
-    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
 
-    key = getKey(uid);
+    getKeyIv(uid, key, iv);
     // iv = getKey(uid);
-    unsigned char iv[] = "1234567887654321";
-    // printf("Key %s\n", key);
-    // printf("Iv %s\n", iv);
+    // unsigned char iv[] = "1234567887654321";
+    printf("Key %s\n%d\n", key, strlen(key));
+    printf("Iv %s\n%d\n", iv, strlen(iv));
 
     unsigned char * output[strlen(input) + EVP_MAX_BLOCK_LENGTH];
     memset(output, '\0', strlen(output));
@@ -490,8 +508,8 @@ unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * ou
     EVP_CIPHER_CTX *ctx;
     ctx = EVP_CIPHER_CTX_new();
 
-    EVP_CipherInit_ex(ctx, EVP_aes_128_cbc(), NULL, NULL, NULL, encdec);
-    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
+    EVP_CipherInit_ex(ctx, EVP_aes_256_cbc(), NULL, NULL, NULL, encdec);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 32);
     OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
     EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
 
@@ -519,15 +537,16 @@ unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * ou
 // https://www.openssl.org/docs/man1.1.0/man3/HMAC.html
 void create_Hmac(char * input, uid_t uid, char * filename) {
     unsigned char *key;
-    // unsigned char *iv;
+    unsigned char *iv;
 
-    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
-    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
     printf("Nano\n");
-    key = getKey(uid);
+    // key = getKey(uid);
+    getKeyIv(uid, key, iv);
     printf("BAM\n%d\n", strlen(key));
     // iv = getKey(uid);
-    unsigned char iv[] = "1234567887654321";
+    // unsigned char iv[] = "1234567887654321";
     // printf("Key %s\n", key);
     // printf("Iv %s\n", iv);
 
@@ -582,15 +601,16 @@ void create_Hmac(char * input, uid_t uid, char * filename) {
 
 int HMAC_Verify(char * Filename, uid_t uid) {
     unsigned char *key;
-    // unsigned char *iv;
+    unsigned char *iv;
 
-    key = (unsigned char *) malloc(sizeof(unsigned char) * 16);   
-    // iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
     // printf("Nano\n");
-    key = getKey(uid);
+    // key = getKey(uid);
+    getKeyIv(uid, key, iv);
     // printf("BAM\n%d\n", strlen(key));
     // iv = getKey(uid);
-    unsigned char iv[] = "1234567887654321";
+    // unsigned char iv[] = "1234567887654321";
     // printf("Key %s\n", key);
     // printf("Iv %s\n", iv);
 
