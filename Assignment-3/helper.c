@@ -227,6 +227,7 @@ void PrintUserDetails(void) {
 }
 
 int getPermission(char * permission) {
+    printf("per: %s\n", permission);
     if (permission[0] == 'r' && permission[1] == 'w') {
         return 2;
     }
@@ -247,9 +248,15 @@ int checkFilePermissions(char * filename) {
     struct passwd * pwd = getpwuid(uid);
     gid_t gid = getgid();
     struct group * gwd = getgrgid(gid);
-    // printf("uid %d\n", uid);
+    // printf("uid %s\n", pwd->pw_name);
 
-    // printf("filename: %s\n", filename);
+    char key[1024];
+    memset(key, '\0', sizeof(key));
+    strcpy(key, "user.");
+    strcat(key, pwd->pw_name);
+    // printf("Key: %s\n", key);
+
+    printf("filename: %s\n", filename);
     struct stat sb;
     if (stat(filename, &sb) == -1) {
         perror("stat");
@@ -260,30 +267,34 @@ int checkFilePermissions(char * filename) {
     struct passwd * pwd_owner = getpwuid(sb.st_uid);
     struct group * gwd_owner = getgrgid(sb.st_gid);
 
-    char key[1024];
-    memset(key, '\0', sizeof(key));
-    strcpy(key, "user.");
-    strcat(key, pwd->pw_name);
-    // printf("Key: %s\n", key);
 
     char value[1024];
     memset(value, '\0', sizeof(value));
     // Checking for file permissions
     ssize_t size;
+    int permissions = -100;
     size = getxattr(filename, key, NULL, 0);
     if ((size = getxattr(filename, key, value, size)) == -1) {
         // if Name not found in ACL then check for owner and Group.
         // printf("LOL\n");
         // printf("%s %s\n", pwd_owner->pw_name, pwd->pw_name);
+
+        // printf("Not in acl\n");
         if ( uid == sb.st_uid ) {
             if ((sb.st_mode & S_IRUSR) && (sb.st_mode &  S_IWUSR)) {
-                return 2;
+                if (2 > permissions) {
+                    permissions = 2;
+                }
             }
             else if ( sb.st_mode & S_IRUSR ) {
-                return 0;
+                if (0 > permissions) {
+                    permissions = 0;
+                }
             }
             else if ( sb.st_mode &  S_IWUSR ) {
-                return 1;
+                if (1 > permissions) {
+                    permissions = 1;
+                }
             }
         }
         // printf("LOL2\n");
@@ -291,32 +302,45 @@ int checkFilePermissions(char * filename) {
         // Check for group permissons
         if ( gid == sb.st_gid ) {
             if ((sb.st_mode & S_IRGRP) && (sb.st_mode & S_IWGRP)) {
-                return 2;
+                if (2 > permissions) {
+                    permissions = 2;
+                }
             }
             else if ( sb.st_mode & S_IRGRP ) {
-                return 0;
+                if (0 > permissions) {
+                    permissions = 0;
+                }
             }
             else if ( sb.st_mode &  S_IWGRP ) {
-                return 1;
+                if (1 > permissions) {
+                    permissions = 1;
+                }
             }
         }
         // Check Others permissions
         if ((sb.st_mode & S_IROTH) && (sb.st_mode &  S_IWOTH)) {
-            return 2;
+            if (2 > permissions) {
+                permissions = 2;
+            }
         }
         else if ( sb.st_mode & S_IROTH ) {
-            return 0;
+            if (0 > permissions) {
+                permissions = 0;
+            }
         }
         else if ( sb.st_mode &  S_IWOTH ) {
-            return 1;
+            if (1 > permissions) {
+                permissions = 1;
+            }
         }
         
     }
     else {
-        int permissions = getPermission(value);
+        permissions = getPermission(value);      
+        // printf("returned PEr %d\n", permissions);  
         return permissions;
     }
-    return -1;
+    return permissions;
 }
 
 int AddAclEntry(char * filename, char * owner, char * group) {
@@ -586,7 +610,7 @@ void create_Hmac(char * input, uid_t uid, char * filename) {
     // fclose(fptr);
 
     int fptr;
-    fptr = open(newFile, O_CREAT|O_WRONLY|O_TRUNC);
+    fptr = open(newFile, O_WRONLY | O_CREAT | O_TRUNC, 644);
     if(fptr < 0) {
         printf("Error: Opening File!\n");
         exit(1);

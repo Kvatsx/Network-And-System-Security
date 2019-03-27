@@ -29,6 +29,7 @@ int main(int argc, char const *argv[]) {
     printf("Path: %s\n", rp);
 
     int ret = checkFolderPermission(rp, argv[1]);
+    printf("PER: %d\n", ret);
     if (ret == -1 || ret == 0) {
         printf("Error: Directory permissions\n");
         seteuid(getuid());
@@ -46,6 +47,7 @@ int main(int argc, char const *argv[]) {
     int flag = 0;
     if ( access(argv[1], F_OK) != -1 ) {
         int permissions = checkFilePermissions(argv[1]);
+        printf("Per: %d\n", permissions);
         if (permissions != 1 && permissions != 2) {
             printf("Error: No permission to read the file!\n");        
             seteuid(getuid());
