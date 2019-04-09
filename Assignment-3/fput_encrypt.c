@@ -28,6 +28,15 @@ int main(int argc, char const *argv[]) {
     realpath(cwd, rp);
     printf("Path: %s\n", rp);
 
+    int size;
+    size = getxattr(argv[1], "E", NULL, 0);  
+    if (size != -1) {
+        printf("Changes not allowed on Encrypted File\n");
+        seteuid(getuid());
+        PrintUserDetails();
+        exit(1);
+    }
+
     int ret = checkFolderPermission(rp, argv[1]);
     printf("PER: %d\n", ret);
     if (ret == -1 || ret == 0) {
@@ -100,6 +109,11 @@ int main(int argc, char const *argv[]) {
         if (changeOwnerGroup(argv[1]) == -1) {
             perror("chown");
         }
+    }
+
+    if ( setxattr(argv[1], "E", "1", 1, 0) == -1) {
+        perror("setxattr: ");   
+        exit(1);
     }
 
     seteuid(getuid());
