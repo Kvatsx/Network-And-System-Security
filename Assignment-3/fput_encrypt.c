@@ -70,7 +70,7 @@ int main(int argc, char const *argv[]) {
 
     int fptr;
 
-    fptr = open(argv[1], O_WRONLY | O_APPEND | O_CREAT);
+    fptr = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
     if(fptr < 0) {
         printf("Error: Opening File!\n");
         exit(1);
