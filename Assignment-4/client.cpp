@@ -11,10 +11,21 @@ using namespace std;
 pthread_t thread1, thread2;
 
 void * SendMessage(void * argv) {
-    int fd = *((int*)(&argv));
+    int fd = *((int*) argv);
     cout << "fd " << fd << endl;
     while(1) {
-
+        // char input[BUFSIZE];
+        // memset(input, '\0', sizeof(input));
+        // cin >> input;
+        char *input = NULL;
+        size_t size;
+        getline(&input, &size, stdin);
+        cout << input << endl;
+        sleep(1);
+        if (send(fd, input, strlen(input), 0) == -1) {
+            perror("send error\n");
+            exit(1);
+        }
     }
 }
 
@@ -161,17 +172,13 @@ int main(int argc, char const *argv[]) {
     if (recv(fd_chat, Buffer, sizeof(Buffer), 0) <= 0) {
         cout << "Client Closed or Recv Error" << endl;
     }
-    // cout << "WTF " << Buffer << endl;
 
-    // memset(Buffer, '\0', sizeof(Buffer));
-    // if (recv(fd_chat, Buffer, sizeof(Buffer), 0) <= 0) {
-    //     cout << "Client Closed or Recv Error" << endl;
-    // }
     cout << Buffer << endl;
 
-    pthread_create(&thread1, NULL, SendMessage, (void *) &fd_chat);    
-
-    printf("RecvMSsg\n");
+    if (pthread_create(&thread1, NULL, SendMessage, &fd_chat)) {
+        cout << "Unable to create a thread" << endl;
+    }
+     
     while(1) {
 
         char Buffer[BUFSIZE] = {0};
@@ -186,7 +193,7 @@ int main(int argc, char const *argv[]) {
             close(fd_chat);
             exit(1);
         }
-        
+        cout << Buffer << endl;
     }
 
     // // pthread_join(thread1, NULL);

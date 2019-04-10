@@ -27,4 +27,7 @@ void * ConnectionHandler(void * argv);
 // Client functions
 void * SendMessage(void * argv);
 
+// Helper.cpp
+// void String2Char(string input, char * output);
+
 #endif

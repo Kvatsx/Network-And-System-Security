@@ -9,7 +9,9 @@ using namespace std;
 
 pthread_t tid[CONNECTIONS];
 map<string, string> Credentials;
+map<string, int> LoginStatus;
 map<string, string> Ticket;
+map<string, int> Fd_map;
 
 void * KDC_Server(void * argv) {
     int fd_kdc;
@@ -94,24 +96,81 @@ void * KDC_Server(void * argv) {
     pthread_exit(NULL);
 }
 
-
 void CreateFakeUsers() {
     Credentials.insert(pair<string, string>("kaustav", "kaustav"));
     Credentials.insert(pair<string, string>("admin", "admin"));
     Credentials.insert(pair<string, string>("naruto", "naruto"));
+    LoginStatus.insert(pair<string,  int>("kaustav", 0));
+    LoginStatus.insert(pair<string,  int>("admin", 0));
+    LoginStatus.insert(pair<string,  int>("naruto", 0));
+    Fd_map.insert(pair<string,  int>("kaustav", -1));
+    Fd_map.insert(pair<string,  int>("admin", -1));
+    Fd_map.insert(pair<string,  int>("naruto", -1));
     cout << "Created 3 Fake users" << endl;
 }
 
 void * ConnectionHandler(void * argv) {
-    int fd = *((int*)(&argv));
-    // char reply[] = "Chat connection Live!";
-    // if (send(fd, reply, strlen(reply), 0) == -1) {
-    //     perror("send error\n");
-    //     exit(1);
-    // }
-    cout << "Hello\n";
+    // struct UserFD args = argv;
+    // string username = args.username;
+    // int fd = args.fd;
+    int fd = *((int*) argv);
+    char reply[] = "Chat connection Live!";
+    if (send(fd, reply, strlen(reply), 0) == -1) {
+        perror("send error\n");
+        exit(1);
+    }
+    cout << "FD " << fd << endl;
     while(1) {
-
+        char message[BUFSIZE];
+        memset(message, '\0', sizeof(message));
+        sleep(1);
+        if (recv(fd, message, sizeof(message), 0) <= 0) {
+            cout << "Client Closed or Recv Error" << endl;
+            close(fd);
+            pthread_exit(NULL);
+        }
+        char * tkn = strtok(message, " ");
+        if (strcmp(tkn, "/who") == 0) {
+            cout << tkn << endl;
+            string reply = "";
+            for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
+                if (i->second == 1) {
+                    reply += i->first;
+                    reply += "\n";
+                }
+            }
+            char out[reply.size() + 1];
+            memset(out, '\0', sizeof(out));
+            strcpy(out, reply.c_str());
+            cout << "Replying with -> " << out << endl;
+            sleep(1);
+            if (send(fd, out, sizeof(out), 0) == -1) {
+                perror("send error\n");
+            }
+        }
+        else if (strcmp(tkn, "/write_all") == 0) {
+            string reply = "";
+            tkn = strtok(NULL, " ");
+            while (tkn != NULL) {
+                cout << "tkn " << tkn << endl;
+                reply += tkn;
+                reply += " ";
+                tkn = strtok(NULL, " ");
+            }
+            char out[reply.size() + 1];
+            memset(out, '\0', sizeof(out));
+            strcpy(out, reply.c_str());
+            cout << "Replying with -> " << out << endl;
+            for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
+                if (i->second == 1 && Fd_map[i->first] != fd) {
+                    int temp_fd = Fd_map[i->first];
+                    if (send(temp_fd, out, sizeof(out), 0) == -1) {
+                        perror("send error\n");
+                    }
+                }
+            }
+        }
+        // else if() {}
     }
 }
 
@@ -179,11 +238,18 @@ int main(int argc, char const *argv[]) {
             cout << "User authenticated from KDC" << endl;
             cout << "Starting server client chat ...." << endl;
             Ticket.erase(user);
+            LoginStatus[user] = 1;
+            Fd_map[user] = sock_chat;
             char reply[] = "User authenticated from KDC!";
             if (send(sock_chat, reply, strlen(reply), 0) == -1) {
                 perror("send error\n");
             }
             // Create Thread for recv and send
+            // struct UserFD * args;
+            // args->username = user;
+            // args->fd = sock_chat;
+            cout << "Sock chat " << sock_chat << endl;
+            // if (pthread_create(&tid[thread_count], NULL, ConnectionHandler, (void *) &args)) {
             if (pthread_create(&tid[thread_count], NULL, ConnectionHandler, (void *) &sock_chat)) {
                 cout << "Unable to create a thread" << endl;
             }
@@ -195,6 +261,7 @@ int main(int argc, char const *argv[]) {
             char reply[] = "Ticket not valid!";
             if (send(sock_chat, reply, strlen(reply), 0) == -1) {
                 perror("send error\n");
+                LoginStatus[user] = 0;
             }
             close(sock_chat);
         }
