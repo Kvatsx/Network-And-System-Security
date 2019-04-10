@@ -47,7 +47,6 @@ void * KDC_Server(void * argv) {
             perror("accept"); 
             exit(1); 
         }
-
         char username[100];
         char password[100];
         if (recv(sock_kdc, username, 100, 0) <= 0) {
@@ -158,7 +157,7 @@ int main(int argc, char const *argv[]) {
             perror("accept"); 
             exit(1); 
         }
-
+        
         char username[100];
         char ticket[100];
         memset(username, '\0', sizeof(username));

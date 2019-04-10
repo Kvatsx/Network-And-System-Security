@@ -141,7 +141,7 @@ int main(int argc, char const *argv[]) {
         perror("send error\n");
         exit(1);
     }
-    sleep(0.5);
+    sleep(1);
     if (send(fd_chat, Tic, strlen(Tic), 0) == -1) {
         perror("send error\n");
         exit(1);
