@@ -10,34 +10,13 @@ using namespace std;
 
 pthread_t thread1, thread2;
 
-// void * SendMessage(void * arg) {
+void * SendMessage(void * argv) {
+    int fd = *((int*)(&argv));
+    cout << "fd " << fd << endl;
+    while(1) {
 
-//     int client_socket = (int) arg;
-//     char Buffer[BUFSIZE] = {0};
-//     printf("sendMssg\n");
-//     while(1) {
-//         sleep(1);
-//         fgets(Buffer, BUFSIZE, stdin);
-//         // printf("Buf %c\n", Buffer);
-//         char * newline = strtok(Buffer, "\n");
-//         if (strcmp(newline, "exit") == 0) {
-//             // printf("Kya back\n");
-//             close(client_socket);
-//             pthread_exit(&thread2);
-//             return NULL;
-//         }
-//         // printf("lol");
-//         // int i;
-//         // for (i=0; i<strlen(newline); i++) {
-//         //     printf("%d ", newline[i]);
-//         // }
-//         // printf("%d\n", strlen(newline));
-//         // Buffer[strlen(Buffer)] = "\0";
-//         if (send(client_socket, newline, strlen(newline), 0) == -1) {
-//             perror("send error\n");
-//         }
-//     }
-// }
+    }
+}
 
 int TalkToKDC(const char * argv, char * ticket) {
     int fd_socket;
@@ -156,7 +135,6 @@ int main(int argc, char const *argv[]) {
     // cout << "Enter Ticket:\t";
     // cin >> ticket;
 
-    // pthread_create(&thread1, NULL, ReceiveMessage, (void *) fd_socket);
     // pthread_create(&thread2, NULL, SendMessage, (void *) fd_socket);
     cout << "My username: " << strlen(username) << endl;
     if (send(fd_chat, username, strlen(username), 0) == -1) {
@@ -179,36 +157,41 @@ int main(int argc, char const *argv[]) {
         close(fd_chat);
         exit(1);
     }
+    memset(Buffer, '\0', sizeof(Buffer));
+    if (recv(fd_chat, Buffer, sizeof(Buffer), 0) <= 0) {
+        cout << "Client Closed or Recv Error" << endl;
+    }
+    // cout << "WTF " << Buffer << endl;
 
-    // while(1) {
-    //     printf("RecvMSsg\n");
-    //     while(1) {
-
-    //         char Buffer[BUFSIZE] = {0};
-    //         int MssgRecvStatus;
-    //         if ((MssgRecvStatus = recv(fd_socket, Buffer, BUFSIZE, 0)) <= 0) {
-    //             if (MssgRecvStatus == 0) {
-    //                 printf("\nServer closed!\n");
-    //             }
-    //             else {
-    //                 perror("recv error!\n");
-    //             }
-    //             close(fd_socket);
-    //             exit(1);
-    //         }
-            
-    //         printf("%s ", Buffer);
-    //         if ( strncmp("Wrong Credentials!", Buffer, 19) == 0 ) {
-    //             close(fd_socket);
-    //             pthread_exit(&thread1);
-    //             exit(1);
-    //         }
-    //     }
+    // memset(Buffer, '\0', sizeof(Buffer));
+    // if (recv(fd_chat, Buffer, sizeof(Buffer), 0) <= 0) {
+    //     cout << "Client Closed or Recv Error" << endl;
     // }
+    cout << Buffer << endl;
+
+    pthread_create(&thread1, NULL, SendMessage, (void *) &fd_chat);    
+
+    printf("RecvMSsg\n");
+    while(1) {
+
+        char Buffer[BUFSIZE] = {0};
+        int MssgRecvStatus;
+        if ((MssgRecvStatus = recv(fd_chat, Buffer, BUFSIZE, 0)) <= 0) {
+            if (MssgRecvStatus == 0) {
+                printf("\nServer closed!\n");
+            }
+            else {
+                perror("recv error!\n");
+            }
+            close(fd_chat);
+            exit(1);
+        }
+        
+    }
 
     // // pthread_join(thread1, NULL);
-    // pthread_join(thread2, NULL);
+    pthread_join(thread1, NULL);
 
-    // close(fd_socket);
+    close(fd_chat);
     return 0;
 }

@@ -20,6 +20,11 @@
 #define BUFSIZE 5024
 #define CONNECTIONS 6
 
+// Server functions
 void * KDC_Server(void * argv);
+void * ConnectionHandler(void * argv);
+
+// Client functions
+void * SendMessage(void * argv);
 
 #endif

@@ -103,12 +103,26 @@ void CreateFakeUsers() {
     cout << "Created 3 Fake users" << endl;
 }
 
+void * ConnectionHandler(void * argv) {
+    int fd = *((int*)(&argv));
+    // char reply[] = "Chat connection Live!";
+    // if (send(fd, reply, strlen(reply), 0) == -1) {
+    //     perror("send error\n");
+    //     exit(1);
+    // }
+    cout << "Hello\n";
+    while(1) {
+
+    }
+}
+
 int main(int argc, char const *argv[]) {
     CreateFakeUsers();
-
-    if (pthread_create(&tid[0], NULL, KDC_Server, NULL)) {
+    int thread_count = 0;
+    if (pthread_create(&tid[thread_count], NULL, KDC_Server, NULL)) {
         cout << "Unable to create a thread" << endl;
     }   
+    thread_count++;
     
     // Chat Server
     int fd_chat;
@@ -160,7 +174,7 @@ int main(int argc, char const *argv[]) {
         string pass(ticket);
         // cout << "User: " << user << "_" << user.size() << endl;
 
-        // cout << "Received ticket for chat:\t" << ticket << endl;
+        cout << "Received ticket for chat:\t" << ticket << endl;
         // cout << "Testing:\t" << Ticket.find(user)->second << endl;
         if (Credentials.find( user ) != Credentials.end() && Ticket.find( user ) != Ticket.end() && Ticket.find(user)->second.compare(pass) == 0 ) {
             cout << "User authenticated from KDC" << endl;
@@ -171,8 +185,10 @@ int main(int argc, char const *argv[]) {
                 perror("send error\n");
             }
             // Create Thread for recv and send
-
-        
+            if (pthread_create(&tid[thread_count], NULL, ConnectionHandler, (void *) &sock_chat)) {
+                cout << "Unable to create a thread" << endl;
+            }
+            thread_count++;
 
         }
         else {
