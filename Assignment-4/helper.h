@@ -10,10 +10,14 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <pthread.h>    
+#include <cstdlib>
+#include <pthread.h>   
 #include <iterator> 
 #include <map> 
 #include <openssl/evp.h>
+#include <time.h>
+#include <list> 
+#include <iterator> 
 
 #define KDC_PORT 5555
 #define CHAT_PORT 6666

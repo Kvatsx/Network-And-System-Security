@@ -20,7 +20,7 @@ void * SendMessage(void * argv) {
         char *input = NULL;
         size_t size;
         getline(&input, &size, stdin);
-        cout << input << endl;
+        input[strlen(input)-1] = '\0';
         sleep(1);
         if (send(fd, input, strlen(input), 0) == -1) {
             perror("send error\n");
@@ -173,7 +173,7 @@ int main(int argc, char const *argv[]) {
         cout << "Client Closed or Recv Error" << endl;
     }
 
-    cout << Buffer << endl;
+    cout << "Last:" << Buffer << endl;
 
     if (pthread_create(&thread1, NULL, SendMessage, &fd_chat)) {
         cout << "Unable to create a thread" << endl;
