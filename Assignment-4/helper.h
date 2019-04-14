@@ -33,6 +33,10 @@
 // Server functions
 void * KDC_Server(void * argv);
 void * ConnectionHandler(void * argv);
+int do_enc(const unsigned char * input, std::string username, int encdec, unsigned char * out);
+int do_dec(const unsigned char * input, std::string username, int encdec, unsigned char * out);
+void getKeyIv(std::string username, unsigned char * key, unsigned char * iv);
+void do_crypt(const unsigned char * input, std::string username, int encdec, unsigned char * out);
 
 // Client functions
 void * SendMessage(void * argv);

@@ -9,6 +9,7 @@
 using namespace std;
 
 pthread_t thread1, thread2;
+string user;
 
 void * SendMessage(void * argv) {
     int fd = *((int*) argv);
@@ -21,8 +22,18 @@ void * SendMessage(void * argv) {
         size_t size;
         getline(&input, &size, stdin);
         input[strlen(input)-1] = '\0';
+        cout << "Input: " << input << endl;
+        if (strlen(input) == 0) {
+            continue;
+        }
+        // cout << "L: " << strlen(input) << endl;
+        // unsigned char *out;
+        // out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+        // do_enc((const unsigned char *)input, user, 1, out);
+
+        cout << "out: " << input << endl;
         sleep(1);
-        if (send(fd, input, strlen(input), 0) == -1) {
+        if (send(fd, input, strlen((const char *)input), 0) == -1) {
             perror("send error\n");
             exit(1);
         }
@@ -102,8 +113,48 @@ int TalkToKDC(const char * argv, char * ticket) {
     close(fd_socket);
     return 1;
 }
+// void ReadKeyAndIv() {
+//     struct passwd * pwd = getpwuid(getuid());
+    
+//     FILE * fd;
+//     char * line = NULL;
+//     size_t len = 0;
+//     ssize_t read;
+
+//     fd = fopen("/etc/shadow", "r");
+//     if (fd == NULL) {
+//         printf("File could not be opened.\n");
+//         perror("open");
+//         return;
+//     }
+
+//     KEY = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+//     IV = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+//     while ((read = getline(&line, &len, fd)) != -1) {
+
+//         char * token = strtok(line, ":");
+//         if (strcmp(token, pwd->pw_name) == 0) {
+//             token = strtok(NULL, ":");
+//             int i;
+
+//             if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 100, 32, KEY) == 0 ) {
+//                 perror("PBKDF");
+//             }
+//             if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, IV) == 0 ) {
+//                 perror("PBKDF");
+//             }
+//             // close(fd);
+//             // return out;
+//         }
+//     }
+//     fclose(fd);
+// }
 
 int main(int argc, char const *argv[]) {
+    // Read Key and Iv
+    // ReadKeyAndIv();
+    cout << "Key collected!" << endl;
     // Talking to KDC
     char * Tic;
     Tic = (char *) malloc(sizeof(char) * 32);
@@ -141,6 +192,7 @@ int main(int argc, char const *argv[]) {
     cout << "Enter username: ";
     char username[100];
     cin >> username;
+    user = username;
 
     // char ticket[32];
     // cout << "Enter Ticket:\t";
@@ -153,7 +205,7 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
     sleep(1);
-    if (send(fd_chat, Tic, strlen(Tic), 0) == -1) {
+    if (send(fd_chat, Tic, 32, 0) == -1) {
         perror("send error\n");
         exit(1);
     }

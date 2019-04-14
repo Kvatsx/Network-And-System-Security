@@ -137,50 +137,146 @@ int checkFilePermissions(const char * filename, string user) {
     return permissions;
 }
 
+int do_enc(const unsigned char * input, string username, int encdec, unsigned char * out) {
+    unsigned char *key;
+    unsigned char *iv;
 
-// unsigned char * do_crypt(char * input, uid_t uid, int encdec, unsigned char * out) {
-//     unsigned char *key;
-//     unsigned char *iv;
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
 
-//     key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
-//     iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    getKeyIv(username, key, iv);
 
-//     // iv = getKey(uid);
-//     // unsigned char iv[] = "1234567887654321";
-//     // printf("Key %s\n%d\n", key, strlen(key));
-//     // printf("Iv %s\n%d\n", iv, strlen(iv));
+    int outlen, tmplen;
 
-//     unsigned char * output[strlen(input) + EVP_MAX_BLOCK_LENGTH];
-//     // memset(output, '\0', strlen(output));
-//     int input_len, output_len;
+    EVP_CIPHER_CTX *ctx;
 
-//     EVP_CIPHER_CTX *ctx;
-//     ctx = EVP_CIPHER_CTX_new();
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-//     EVP_CipherInit_ex(ctx, EVP_aes_256_cbc(), NULL, NULL, NULL, encdec);
-//     OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 32);
-//     OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
-//     EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+    if(!EVP_EncryptUpdate(ctx, out, &outlen, input, strlen((const char *) input)))
+    {
+        return 0;
+    }
 
-//     if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
-//         perror("Here");
-//         EVP_CIPHER_CTX_free(ctx);
-//         return NULL;
-//     }
+    if(!EVP_EncryptFinal_ex(ctx, out + outlen, &tmplen))
+    {
+        return 0;
+    }
+    outlen += tmplen;
+    EVP_CIPHER_CTX_free(ctx);
+    // out[outlen] = "\0";
+    printf("OUTPUT: %s\n", out);
+    return 1;
+}
 
-//     strcpy(out, output);
+int do_dec(const unsigned char * input, string username, int encdec, unsigned char * out) {
+    unsigned char *key;
+    unsigned char *iv;
 
-//     // if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
-//     //     perror("where");
-//     //     EVP_CIPHER_CTX_free(ctx);
-//     //     return NULL;
-//     // }
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
 
-//     EVP_CIPHER_CTX_free(ctx);
+    getKeyIv(username, key, iv);
 
-//     return output;
+    int outlen, tmplen;
 
-// }
+    EVP_CIPHER_CTX *ctx;
+
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
+
+    if(!EVP_DecryptUpdate(ctx, out, &outlen, input, strlen((const char *)input)))
+    {
+        perror("dec update");
+        return 0;
+    }
+
+    // if(!EVP_DecryptFinal_ex(ctx,(unsigned char *) (out + outlen), &tmplen))
+    // {
+    //     perror("Dec Final");
+    //     return 0;
+    // }
+    cout << "Outlen: " << outlen << endl;
+    printf("OUTPUT: %s\n", out);
+    // outlen += tmplen;
+    // out[outlen] = reinterpret_cast<const unsigned char *>( "\0") ;
+    EVP_CIPHER_CTX_free(ctx);
+    return outlen;
+}
+void getKeyIv(string username, unsigned char * key, unsigned char * iv) {
+    struct passwd * pwd = getpwnam(username.c_str());
+    
+    FILE * fd;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fd = fopen("/etc/shadow", "r");
+    if (fd == NULL) {
+        printf("File could not be opened.\n");
+        perror("open");
+        return;
+    }
+
+    while ((read = getline(&line, &len, fd)) != -1) {
+
+        char * token = strtok(line, ":");
+        if (strcmp(token, pwd->pw_name) == 0) {
+            token = strtok(NULL, ":");
+            int i;
+
+            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 100, 32, key) == 0 ) {
+                perror("PBKDF");
+            }
+            if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, iv) == 0 ) {
+                perror("PBKDF");
+            }
+        }
+    }
+    fclose(fd);
+}
+
+void do_crypt(const unsigned char * input, string username, int encdec, unsigned char * out) {
+    unsigned char *key;
+    unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    getKeyIv(username, key, iv);
+
+    unsigned char output[sizeof(input) + EVP_MAX_BLOCK_LENGTH];
+    // memset(output, '\0', strlen(output));
+    int input_len, output_len;
+
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+
+    EVP_CipherInit_ex(ctx, EVP_aes_256_cbc(), NULL, NULL, NULL, encdec);
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(ctx) == 32);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(ctx) == 16);
+    EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, encdec);
+
+    cout << "do_crypt Called!" << endl;
+
+    input_len = sizeof(input);
+
+    if(!EVP_CipherUpdate(ctx, output, &output_len, input, input_len)) {
+        perror("Here");
+        EVP_CIPHER_CTX_free(ctx);
+        return;
+    }
+    cout << "output_len " << strlen((const char *)output) << endl;
+    strcpy((char *)out, (const char *)output);
+
+    if(!EVP_CipherFinal_ex(ctx, output, &output_len)) {
+        perror("where");
+        EVP_CIPHER_CTX_free(ctx);
+        return;
+    }   
+
+    EVP_CIPHER_CTX_free(ctx);
+}
 // void String2Char(string input, char * output) {
 
 // }

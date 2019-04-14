@@ -18,57 +18,57 @@ map<string, string> Credentials;
 map<string, int> LoginStatus;
 map<string, string> Ticket;
 map<string, int> Fd_map;
-map<string, string> Key;
-map<string, string> Iv;
+// map<string, string> Key;
+// map<string, string> Iv;
 map<int, list<string>> Groups;
 
-void getKeyIv() {
+// void getKeyIv() {
     
-    FILE * fd;
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
+//     FILE * fd;
+//     char * line = NULL;
+//     size_t len = 0;
+//     ssize_t read;
 
-    fd = fopen("/etc/shadow", "r");
-    if (fd == NULL) {
-        printf("File could not be opened.\n");
-        perror("open");
-        return;
-    }
+//     fd = fopen("/etc/shadow", "r");
+//     if (fd == NULL) {
+//         printf("File could not be opened.\n");
+//         perror("open");
+//         return;
+//     }
 
-    while ((read = getline(&line, &len, fd)) != -1) {
+//     while ((read = getline(&line, &len, fd)) != -1) {
 
-        char * token = strtok(line, ":");
-        for (auto i = Credentials.begin(); i != Credentials.end(); i++) {
-            string lol(token);
-            string name(i->first);
-            if (lol.compare(i->first) == 0) {
-                token = strtok(NULL, ":");
-                int i;
-                unsigned char * key;
-                unsigned char * iv;
-                key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
-                iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
-                if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 100, 32, key) == 0 ) {
-                    perror("PBKDF");
-                }
-                if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, iv) == 0 ) {
-                    perror("PBKDF");
-                }
-                string key2((char*) key);
-                string iv2((char *) iv);
+//         char * token = strtok(line, ":");
+//         for (auto i = Credentials.begin(); i != Credentials.end(); i++) {
+//             string lol(token);
+//             string name(i->first);
+//             if (lol.compare(i->first) == 0) {
+//                 token = strtok(NULL, ":");
+//                 int i;
+//                 unsigned char * key;
+//                 unsigned char * iv;
+//                 key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+//                 iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+//                 if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 100, 32, key) == 0 ) {
+//                     perror("PBKDF");
+//                 }
+//                 if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, iv) == 0 ) {
+//                     perror("PBKDF");
+//                 }
+//                 string key2((char*) key);
+//                 string iv2((char *) iv);
                 
-                Key.insert(pair<string, string>(name, key2));
-                Iv.insert(pair<string, string>(name, iv2));
-                
-                // close(fd);
-                // return out;
-            }
-        }
-    }
-    fclose(fd);
-    // return NULL;
-}
+//                 Key.insert(pair<string, string>(name, key2));
+//                 Iv.insert(pair<string, string>(name, iv2));
+//                 // cout << name << " : " << Key[name] <<  endl;
+//                 // close(fd);
+//                 // return out;
+//             }
+//         }
+//     }
+//     fclose(fd);
+//     // return NULL;
+// }
 
 void * KDC_Server(void * argv) {
     int fd_kdc;
@@ -184,16 +184,35 @@ void * ConnectionHandler(void * argv) {
     cout << "FD " << fd << endl;
     while(1) {
         char message[BUFSIZE];
-        memset(message, '\0', sizeof(message));
-        if (recv(fd, message, sizeof(message), 0) <= 0) {
+        // memset(message, '\0', sizeof(message));
+        if ( recv(fd, message, BUFSIZE, 0) <= 0) {
             cout << "Client Closed or Recv Error" << endl;
             close(fd);
             LoginStatus[username] = -1;
             pthread_exit(NULL);
         }
-        char * tkn = strtok(message, " ");
-        cout << tkn  << " len: " << strlen(tkn) << endl;
-        if (strcmp(tkn, "/who") == 0) {
+        // if (len == 0) {
+        //     continue;
+        // }
+        // cout << "L: " << len << endl;
+        // char mssg[BUFSIZE];
+        // memset(mssg, '\0', BUFSIZE);
+        // strncpy(mssg, message, len);
+        // -----------------------------
+        // cout << tkn  << " len: " << strlen(tkn) << endl;
+        // cout << "MSSG: " << message << endl;
+        // unsigned char *out;
+        // out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+
+        // // cout << "out: " << out << endl;
+
+        // int size = do_dec((const unsigned char *) message, username, 0, out);
+        // cout << "Dec: "  << out << endl;
+        // --------------------------
+        // cout << "Recv mssg: " << message << endl;
+        char * tkn = strtok((char *) messages_base
+        cout << "Recv command: " << tkn << " " << strlen(tkn) << endl;
+        if (strncmp(tkn, "/who", 4) == 0) {
             // cout << tkn << endl;
             string reply = "";
             for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
@@ -211,7 +230,7 @@ void * ConnectionHandler(void * argv) {
                 perror("send error\n");
             }
         }
-        else if (strcmp(tkn, "/write_all") == 0) {
+        else if (strncmp(tkn, "/write_all", 11) == 0) {
             string reply = "";
             tkn = strtok(NULL, " ");
             while (tkn != NULL) {
@@ -233,7 +252,7 @@ void * ConnectionHandler(void * argv) {
                 }
             }
         }
-        else if (strcmp(tkn, "/create_group") == 0) {
+        else if (strncmp(tkn, "/create_group", 14) == 0) {
             int number = rand() % 9000 + 1000;
             cout << "Rand: " << number << endl;
             list<string> ls;
@@ -245,7 +264,7 @@ void * ConnectionHandler(void * argv) {
                 perror("send error\n");
             }
         }
-        else if (strcmp(tkn, "/group_invite") == 0) {
+        else if (strncmp(tkn, "/group_invite", 14) == 0) {
             tkn = strtok(NULL, " ");
             char gid[5];
             memset(gid, '\0', sizeof(gid));
@@ -265,7 +284,7 @@ void * ConnectionHandler(void * argv) {
                 tkn = strtok(NULL, " ");
             }
         }
-        else if (strcmp(tkn, "/group_invite_accept") == 0) {
+        else if (strncmp(tkn, "/group_invite_accept", 21) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
@@ -275,7 +294,7 @@ void * ConnectionHandler(void * argv) {
                 Groups[gid].push_back(username);
             }
         }
-        else if (strcmp(tkn, "/request_public_key") == 0) {
+        else if (strncmp(tkn, "/request_public_key", 20) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
@@ -299,22 +318,26 @@ void * ConnectionHandler(void * argv) {
                 }
             }
         }
-        else if (strcmp(tkn, "/send_public_key") == 0) {
+        else if (strncmp(tkn, "/send_public_key", 17) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
             }
             string user(tkn);
-            tkn = strtok(NULL, " ");
-            if (tkn == NULL) {
-                continue;
-            }
-            string pubkey(tkn);
             for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
                 if (user.compare(i->first) == 0) {
                     if (LoginStatus[user] != 0) {
+                        unsigned char *key;
+                        unsigned char *iv;
+
+                        key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+                        iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+                        getKeyIv(username, key, iv);
                         string reply = "";
-                        reply += pubkey;
+                        reply += (const char *)key;
+                        reply += " ";
+                        reply += (const char *)iv;
 
                         char chararray[reply.length() + 1]; 
                         strcpy(chararray, reply.c_str());
@@ -326,7 +349,7 @@ void * ConnectionHandler(void * argv) {
                 }
             }
         }
-        else if (strcmp(tkn, "/write_group") == 0) {
+        else if (strncmp(tkn, "/write_group", 13) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
@@ -353,7 +376,7 @@ void * ConnectionHandler(void * argv) {
                 }
             }
         }
-        else if (strcmp(tkn, "/list_user_files") == 0) {
+        else if (strncmp(tkn, "/list_user_files", 17) == 0) {
             tkn = strtok(NULL, " ");
             string user(tkn);
             string path = "/fakeslash/fakehome/";
@@ -412,6 +435,12 @@ void * ConnectionHandler(void * argv) {
                 perror("send error\n");
             }
         }
+        else if (strncmp(tkn, "/init_group_dhxchg", 19) == 0) {
+            // TODO:
+        }
+        else if (strncmp(tkn, "/request_file", 14) == 0) {
+            // TODO;
+        }
         else {
             cout << "Why?" << endl;
         }
@@ -421,7 +450,7 @@ void * ConnectionHandler(void * argv) {
 
 int main(int argc, char const *argv[]) {
     CreateFakeUsers();
-    getKeyIv();
+    // getKeyIv();
     int thread_count = 0;
     if (pthread_create(&tid[thread_count], NULL, KDC_Server, NULL)) {
         cout << "Unable to create a thread" << endl;
