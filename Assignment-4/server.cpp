@@ -255,7 +255,7 @@ void * ConnectionHandler(void * argv) {
             while(tkn != NULL) {
                 string name(tkn);
                 if (LoginStatus.find(name) != LoginStatus.end()) {
-                    if (LoginStatus[name] != -1) {
+                    if (LoginStatus[name] != 0) {
                         int temp_fd = Fd_map[name];
                         if (send(temp_fd, gid, sizeof(gid), 0) == -1) {
                             perror("send error\n");
@@ -263,6 +263,153 @@ void * ConnectionHandler(void * argv) {
                     }
                 }
                 tkn = strtok(NULL, " ");
+            }
+        }
+        else if (strcmp(tkn, "/group_invite_accept") == 0) {
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
+            int gid = atoi(tkn);
+            if (Groups.find(gid) != Groups.end()) {
+                Groups[gid].push_back(username);
+            }
+        }
+        else if (strcmp(tkn, "/request_public_key") == 0) {
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
+            string user(tkn);
+            for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
+                if (user.compare(i->first) == 0) {
+                    if (i->second != 0){
+                        string reply = "";
+                        reply += username;
+                        reply += " ";
+                        reply += "has requested your public key";
+
+                        char chararray[reply.length() + 1]; 
+                        strcpy(chararray, reply.c_str());
+                        int temp_fd = Fd_map[i->first];
+                        if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                            perror("send error\n");
+                        }
+                    }
+                }
+            }
+        }
+        else if (strcmp(tkn, "/send_public_key") == 0) {
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
+            string user(tkn);
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
+            string pubkey(tkn);
+            for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
+                if (user.compare(i->first) == 0) {
+                    if (LoginStatus[user] != 0) {
+                        string reply = "";
+                        reply += pubkey;
+
+                        char chararray[reply.length() + 1]; 
+                        strcpy(chararray, reply.c_str());
+                        int temp_fd = Fd_map[user];
+                        if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                            perror("send error\n");
+                        }
+                    }
+                }
+            }
+        }
+        else if (strcmp(tkn, "/write_group") == 0) {
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
+            int gid = atoi(tkn);
+            string reply = "";
+            tkn = strtok(NULL, " ");
+            while (tkn != NULL) {
+                reply += tkn;
+                reply += " ";
+                tkn = strtok(NULL, " ");
+            }
+            char chararray[reply.length() + 1]; 
+            strcpy(chararray, reply.c_str());
+            list<string> group_list = Groups[gid];
+
+            for (list<string>::const_iterator i = group_list.begin(); i != group_list.end(); i++) {
+                string user(i->c_str());
+                if (LoginStatus[user] != 0) {
+                    int temp_fd = Fd_map[user];
+                    if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                        perror("send error\n");
+                    }
+                }
+            }
+        }
+        else if (strcmp(tkn, "/list_user_files") == 0) {
+            tkn = strtok(NULL, " ");
+            string user(tkn);
+            string path = "/fakeslash/fakehome/";
+            path += user;
+            path += "/";
+
+            string reply = "";
+            tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                struct dirent *name;
+                DIR * dir = opendir(path.c_str());
+
+                if (dir == NULL) {
+                    cout << "Wrong Path!" << endl;
+                    continue;
+                }
+                while ((name = readdir(dir)) != NULL) {
+                    // printf("d_name %s\n", name->d_name);
+                    string temp = path;
+                    temp += name->d_name;
+                    int ret = checkFilePermissions(temp.c_str(), username);
+                    cout << "Return: " << ret << endl;
+                    if (ret == 1 || ret == 2) {
+                        reply += name->d_name;
+                        reply += "\t";
+                    }
+                }
+                closedir(dir);
+            }
+            else {
+                path += tkn;
+                path += "/";
+                struct dirent *name;
+                DIR * dir = opendir(path.c_str());
+
+                if (dir == NULL) {
+                    cout << "Wrong Path!" << endl;
+                    continue;
+                }
+                while ((name = readdir(dir)) != NULL) {
+                    // printf("d_name %s\n", name->d_name);
+                    string temp = path;
+                    temp += name->d_name;
+                    int ret = checkFilePermissions(temp.c_str(), username);
+                    cout << "Return: " << ret << endl;
+                    if (ret == 1 || ret == 2) {
+                        reply += name->d_name;
+                        reply += "\t";
+                    }
+                }
+                closedir(dir);
+            }
+            char chararray[reply.length() + 1]; 
+            strcpy(chararray, reply.c_str());
+            if (send(fd, chararray, sizeof(chararray), 0) == -1) {
+                perror("send error\n");
             }
         }
         else {

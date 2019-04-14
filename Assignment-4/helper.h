@@ -18,6 +18,12 @@
 #include <time.h>
 #include <list> 
 #include <iterator> 
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/xattr.h>
 
 #define KDC_PORT 5555
 #define CHAT_PORT 6666
@@ -33,5 +39,6 @@ void * SendMessage(void * argv);
 
 // Helper.cpp
 // void String2Char(string input, char * output);
+int checkFilePermissions(const char * filename, std::string user);
 
 #endif
