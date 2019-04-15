@@ -13,7 +13,7 @@ string user;
 
 void * SendMessage(void * argv) {
     int fd = *((int*) argv);
-    cout << "fd " << fd << endl;
+    // cout << "fd " << fd << endl;
     while(1) {
         // char input[BUFSIZE];
         // memset(input, '\0', sizeof(input));
@@ -75,6 +75,11 @@ int TalkToKDC(const char * argv, char * ticket) {
     size_t size;
     getline(&username, &size, stdin);
     username[strlen(username)-1] = '\0';
+
+    if (checkUsername(username) == -1) {
+        close(fd_socket);
+        exit(1);
+    }
     // gets("%s", username);
     getPass("Enter Password", 1, password);
 
@@ -170,7 +175,8 @@ int main(int argc, char const *argv[]) {
         cout << "Error: Connecting to KDC" << endl;
         exit(1);
     }
-    cout << "Returned Ticket " << Tic << endl;
+    // cout << "Returned Ticket " << Tic << endl;
+    cout << "Ticket recevived!" << endl;
 
     // Connect to server on Chat Port
     int fd_chat;
@@ -202,12 +208,17 @@ int main(int argc, char const *argv[]) {
     cin >> username;
     user = username;
 
+    if (checkUsername(username) == -1) {
+        cout << "Thats not your real name!" << endl;
+        close(fd_chat);
+        exit(1);
+    }
     // char ticket[32];
     // cout << "Enter Ticket:\t";
     // cin >> ticket;
 
     // pthread_create(&thread2, NULL, SendMessage, (void *) fd_socket);
-    cout << "My username: " << strlen(username) << endl;
+    // cout << "My username: " << strlen(username) << endl;
     if (send(fd_chat, username, strlen(username), 0) == -1) {
         perror("send error\n");
         exit(1);
@@ -233,7 +244,7 @@ int main(int argc, char const *argv[]) {
         cout << "Client Closed or Recv Error" << endl;
     }
 
-    cout << "Last:" << Buffer << endl;
+    // cout << "Last:" << Buffer << endl;
 
     if (pthread_create(&thread1, NULL, SendMessage, &fd_chat)) {
         cout << "Unable to create a thread" << endl;
@@ -253,10 +264,14 @@ int main(int argc, char const *argv[]) {
             close(fd_chat);
             exit(1);
         }
-        cout << Buffer << endl;
+        unsigned char *out;
+        out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+
+        int ret = do_dec((const unsigned char *) Buffer, user, 0, out);
+        out[ret] = '\0';
+        cout << "s: " << out << endl;
     }
 
-    // // pthread_join(thread1, NULL);
     pthread_join(thread1, NULL);
 
     close(fd_chat);

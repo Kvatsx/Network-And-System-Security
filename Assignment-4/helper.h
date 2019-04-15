@@ -59,6 +59,7 @@ void * SendMessage(void * argv);
 int checkFilePermissions(const char * filename, std::string user);
 void encdec(const unsigned char * input, std::string username, int encdec, unsigned char * out);
 void getPass(char *prompt, int show_asterisk, char * password);
+int checkUsername(char * username);
 
 
 #endif

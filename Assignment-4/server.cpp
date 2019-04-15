@@ -181,7 +181,6 @@ void * ConnectionHandler(void * argv) {
         close(fd);
         pthread_exit(NULL);
     }
-    cout << "FD " << fd << endl;
     while(1) {
         char message[BUFSIZE];
         // memset(message, '\0', sizeof(message));
@@ -191,28 +190,15 @@ void * ConnectionHandler(void * argv) {
             LoginStatus[username] = -1;
             pthread_exit(NULL);
         }
-        // if (len == 0) {
-        //     continue;
-        // }
-        // cout << "L: " << len << endl;
-        // char mssg[BUFSIZE];
-        // memset(mssg, '\0', BUFSIZE);
-        // strncpy(mssg, message, len);
-        // -----------------------------
-        // cout << tkn  << " len: " << strlen(tkn) << endl;
-        // cout << "MSSG: " << message << endl;
         unsigned char *out;
         out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
-
         // // cout << "out: " << out << endl;
 
         int ret = do_dec((const unsigned char *) message, username, 0, out);
         out[ret] = '\0';
-        cout << "Dec: "  << out << endl;
-        // --------------------------
-        // cout << "Recv mssg: " << message << endl;
+        cout << username << ": "  << out << endl;
         char * tkn = strtok((char *) out, " ");
-        cout << "Recv command: " << tkn << " " << strlen(tkn) << endl;
+
         if (strncmp(tkn, "/who", 4) == 0) {
             // cout << tkn << endl;
             string reply = "";
@@ -227,7 +213,12 @@ void * ConnectionHandler(void * argv) {
             strcpy(out, reply.c_str());
             cout << "Replying with -> " << out << endl;
             sleep(0.5);
-            if (send(fd, out, sizeof(out), 0) == -1) {
+            unsigned char *output;
+            output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+            int ret = do_enc((const unsigned char *)out, username, 1, output);
+            output[ret] = '\0';
+            // cout << "Sending: " << output << endl;
+            if (send(fd, output, strlen((const char *) output), 0) == -1) {
                 perror("send error\n");
             }
         }
@@ -250,7 +241,11 @@ void * ConnectionHandler(void * argv) {
             for (auto i = LoginStatus.begin(); i != LoginStatus.end(); i++) {
                 if (i->second == 1 && Fd_map[i->first] != fd) {
                     int temp_fd = Fd_map[i->first];
-                    if (send(temp_fd, out, sizeof(out), 0) == -1) {
+                    unsigned char *output;
+                    output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                    int ret = do_enc((const unsigned char *)out, i->first, 1, output);
+                    output[ret] = '\0';
+                    if (send(temp_fd, output, strlen((const char *) output), 0) == -1) {
                         perror("send error\n");
                     }
                 }
@@ -264,7 +259,11 @@ void * ConnectionHandler(void * argv) {
             Groups.insert(pair<int, list<string> >(number, ls));
             string num = to_string(number);
             char const *pchar = num.c_str();
-            if (send(fd, pchar, sizeof(pchar), 0) == -1) {
+            unsigned char *output;
+            output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+            int ret = do_enc((const unsigned char *)pchar, username, 1, output);
+            output[ret] = '\0';
+            if (send(fd, output, strlen((const char *) output), 0) == -1) {
                 perror("send error\n");
             }
         }
@@ -280,7 +279,11 @@ void * ConnectionHandler(void * argv) {
                 if (LoginStatus.find(name) != LoginStatus.end()) {
                     if (LoginStatus[name] != 0) {
                         int temp_fd = Fd_map[name];
-                        if (send(temp_fd, gid, sizeof(gid), 0) == -1) {
+                        unsigned char *output;
+                        output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                        int ret = do_enc((const unsigned char *) gid, name, 1, output);
+                        output[ret] = '\0';
+                        if (send(temp_fd, output, strlen((const char *) output), 0) == -1) {
                             perror("send error\n");
                         }
                     }
@@ -288,7 +291,7 @@ void * ConnectionHandler(void * argv) {
                 tkn = strtok(NULL, " ");
             }
         }
-        else if (strncmp(tkn, "/group_invite_accept", 21) == 0) {
+        else if (strncmp(tkn, "/group_invite_acc", 18) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
@@ -315,7 +318,11 @@ void * ConnectionHandler(void * argv) {
                         char chararray[reply.length() + 1]; 
                         strcpy(chararray, reply.c_str());
                         int temp_fd = Fd_map[i->first];
-                        if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                        unsigned char *output;
+                        output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                        int ret = do_enc((const unsigned char *) chararray, i->first, 1, output);
+                        output[ret] = '\0';
+                        if (send(temp_fd, output, strlen((const char *) output), 0) == -1) {
                             perror("send error\n");
                         }
                     }
@@ -346,7 +353,11 @@ void * ConnectionHandler(void * argv) {
                         char chararray[reply.length() + 1]; 
                         strcpy(chararray, reply.c_str());
                         int temp_fd = Fd_map[user];
-                        if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                        unsigned char *output;
+                        output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                        int ret = do_enc((const unsigned char *) chararray, user, 1, output);
+                        output[ret] = '\0';
+                        if (send(temp_fd, output, sizeof((const char *) output), 0) == -1) {
                             perror("send error\n");
                         }
                     }
@@ -374,7 +385,11 @@ void * ConnectionHandler(void * argv) {
                 string user(i->c_str());
                 if (LoginStatus[user] != 0) {
                     int temp_fd = Fd_map[user];
-                    if (send(temp_fd, chararray, sizeof(chararray), 0) == -1) {
+                    unsigned char *output;
+                    output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                    int ret = do_enc((const unsigned char *) chararray, user, 1, output);
+                    output[ret] = '\0';
+                    if (send(temp_fd, output, sizeof((const char *) output), 0) == -1) {
                         perror("send error\n");
                     }
                 }
@@ -435,7 +450,11 @@ void * ConnectionHandler(void * argv) {
             }
             char chararray[reply.length() + 1]; 
             strcpy(chararray, reply.c_str());
-            if (send(fd, chararray, sizeof(chararray), 0) == -1) {
+            unsigned char *output;
+            output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+            int ret = do_enc((const unsigned char *) chararray, username, 1, output);
+            output[ret] = '\0';
+            if (send(fd, output, strlen((const char *) output), 0) == -1) {
                 perror("send error\n");
             }
         }

@@ -146,26 +146,21 @@ int do_enc(const unsigned char * input, string username, int encdec, unsigned ch
 
     getKeyIv(username, key, iv);
 
-    int outlen, tmplen, val_lav;
+    int outlen, val_lav;
 
     EVP_CIPHER_CTX *ctx;
 
     ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-    if(!EVP_EncryptUpdate(ctx, out, &outlen, input, strlen((const char *) input)))
-    {
-        return 0;
-    }
+    EVP_EncryptUpdate(ctx, out, &outlen, input, strlen((const char *) input));
     val_lav = outlen;
-    if(!EVP_EncryptFinal_ex(ctx, out + outlen, &outlen))
-    {
-        return val_lav;
-    }
+    EVP_EncryptFinal_ex(ctx, out + outlen, &outlen);
+    
     val_lav += outlen;
     EVP_CIPHER_CTX_free(ctx);
     // out[outlen] = "\0";
-    printf("OUTPUT: %s\n", out);
+    // printf("OUTPUT: %s\n", out);
     return val_lav;
 }
 
@@ -185,26 +180,20 @@ int do_dec(const unsigned char * input, string username, int encdec, unsigned ch
     ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-    if(!EVP_DecryptUpdate(ctx, out, &outlen, input, strlen((const char *)input)))
-    {
-        perror("dec update");
-        return 0;
-    }
+    EVP_DecryptUpdate(ctx, out, &outlen, input, strlen((const char *)input));
     val_lav = outlen;
-    if(!EVP_DecryptFinal_ex(ctx,(unsigned char *) (out + outlen), &outlen))
-    {
-        perror("Dec Final");
-        return val_lav;
-    }
+    EVP_DecryptFinal_ex(ctx,(unsigned char *) (out + outlen), &outlen);
+
     val_lav += outlen;
-    cout << "Outlen: " << outlen << endl;
-    printf("OUTPUT: %s\n", out);
+    // cout << "Outlen: " << outlen << endl;
+    // printf("OUTPUT: %s\n", out);
 
     // out[outlen] = reinterpret_cast<const unsigned char *>( "\0") ;
     EVP_CIPHER_CTX_free(ctx);
     return val_lav;
 }
 void getKeyIv(string username, unsigned char * key, unsigned char * iv) {
+    username = "fakeroot";
     struct passwd * pwd = getpwnam(username.c_str());
     
     FILE * fd;
@@ -354,4 +343,41 @@ void getPass(char *prompt, int show_asterisk, char * password)
     }
     password[count] = '\0';
     printf("\n");
+}
+
+int Encrypted_send(char * input, string user, int fd) {
+    unsigned char *out;
+    out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+    int ret = do_enc((const unsigned char *)input, user, 1, out);
+    out[ret] = '\0';
+
+    sleep(1);
+    if (send(fd, out, strlen((const char *)out), 0) == -1) {
+        perror("send error\n");
+        return -1;
+    }
+    return 1;
+}
+
+int Decrypted_recv(char * out, string user, int fd) {
+    char input[BUFSIZE];
+    if ( recv(fd, input, BUFSIZE, 0) <= 0) {
+        cout << "Client Closed or Recv Error" << endl;
+        return -1;
+    }
+
+    int ret = do_dec((const unsigned char *) input, user, 0, (unsigned char *) out);
+    out[ret] = '\0';
+}
+
+
+int checkUsername(char * username) {
+    struct passwd * pwd = getpwuid(getuid());
+    // cout << "Expected user: " << pwd->pw_name << endl; 
+    cout << "Thats not your real name!" << endl;
+
+    if (strcmp(pwd->pw_name, username) != 0) {
+        return -1;
+    }
+    return 1;
 }
