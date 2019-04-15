@@ -23,17 +23,17 @@ void * SendMessage(void * argv) {
         getline(&input, &size, stdin);
         input[strlen(input)-1] = '\0';
         cout << "Input: " << input << endl;
-        if (strlen(input) == 0) {
+        if (size == 0 || strlen(input) == 0) {
             continue;
         }
         // cout << "L: " << strlen(input) << endl;
-        // unsigned char *out;
-        // out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
-        // do_enc((const unsigned char *)input, user, 1, out);
-
-        cout << "out: " << input << endl;
+        unsigned char *out;
+        out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+        int ret = do_enc((const unsigned char *)input, user, 1, out);
+        out[ret] = '\0';
+        // cout << "out: " << out << " " << ret << endl;
         sleep(1);
-        if (send(fd, input, strlen((const char *)input), 0) == -1) {
+        if (send(fd, out, strlen((const char *)out), 0) == -1) {
             perror("send error\n");
             exit(1);
         }
@@ -66,13 +66,20 @@ int TalkToKDC(const char * argv, char * ticket) {
         exit(1);
     }
 
-    cout << "Enter username: ";
-    char username[100];
+    // cout << "Enter username: ";
+    // char username[100];
+    char * username = NULL;
     char password[100];
-    cin >> username;
+    // cin >> username;
+    printf("Enter Username: ");
+    size_t size;
+    getline(&username, &size, stdin);
+    username[strlen(username)-1] = '\0';
+    // gets("%s", username);
+    getPass("Enter Password", 1, password);
 
-    cout << "Enter Password: ";
-    cin >> password;
+    // cout << "Enter Password: ";
+    // cin >> password;
 
     // cout << "Entered username and password\t" << username << "\t" << password << endl;
 
@@ -113,6 +120,7 @@ int TalkToKDC(const char * argv, char * ticket) {
     close(fd_socket);
     return 1;
 }
+
 // void ReadKeyAndIv() {
 //     struct passwd * pwd = getpwuid(getuid());
     

@@ -201,16 +201,17 @@ void * ConnectionHandler(void * argv) {
         // -----------------------------
         // cout << tkn  << " len: " << strlen(tkn) << endl;
         // cout << "MSSG: " << message << endl;
-        // unsigned char *out;
-        // out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+        unsigned char *out;
+        out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
 
         // // cout << "out: " << out << endl;
 
-        // int size = do_dec((const unsigned char *) message, username, 0, out);
-        // cout << "Dec: "  << out << endl;
+        int ret = do_dec((const unsigned char *) message, username, 0, out);
+        out[ret] = '\0';
+        cout << "Dec: "  << out << endl;
         // --------------------------
         // cout << "Recv mssg: " << message << endl;
-        char * tkn = strtok((char *) messages_base
+        char * tkn = strtok((char *) out, " ");
         cout << "Recv command: " << tkn << " " << strlen(tkn) << endl;
         if (strncmp(tkn, "/who", 4) == 0) {
             // cout << tkn << endl;
@@ -233,6 +234,9 @@ void * ConnectionHandler(void * argv) {
         else if (strncmp(tkn, "/write_all", 11) == 0) {
             string reply = "";
             tkn = strtok(NULL, " ");
+            if (tkn == NULL) {
+                continue;
+            }
             while (tkn != NULL) {
                 cout << "tkn " << tkn << endl;
                 reply += tkn;
@@ -437,6 +441,7 @@ void * ConnectionHandler(void * argv) {
         }
         else if (strncmp(tkn, "/init_group_dhxchg", 19) == 0) {
             // TODO:
+            
         }
         else if (strncmp(tkn, "/request_file", 14) == 0) {
             // TODO;

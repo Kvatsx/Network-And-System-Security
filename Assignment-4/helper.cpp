@@ -146,7 +146,7 @@ int do_enc(const unsigned char * input, string username, int encdec, unsigned ch
 
     getKeyIv(username, key, iv);
 
-    int outlen, tmplen;
+    int outlen, tmplen, val_lav;
 
     EVP_CIPHER_CTX *ctx;
 
@@ -157,16 +157,16 @@ int do_enc(const unsigned char * input, string username, int encdec, unsigned ch
     {
         return 0;
     }
-
-    if(!EVP_EncryptFinal_ex(ctx, out + outlen, &tmplen))
+    val_lav = outlen;
+    if(!EVP_EncryptFinal_ex(ctx, out + outlen, &outlen))
     {
-        return 0;
+        return val_lav;
     }
-    outlen += tmplen;
+    val_lav += outlen;
     EVP_CIPHER_CTX_free(ctx);
     // out[outlen] = "\0";
     printf("OUTPUT: %s\n", out);
-    return 1;
+    return val_lav;
 }
 
 int do_dec(const unsigned char * input, string username, int encdec, unsigned char * out) {
@@ -178,7 +178,7 @@ int do_dec(const unsigned char * input, string username, int encdec, unsigned ch
 
     getKeyIv(username, key, iv);
 
-    int outlen, tmplen;
+    int outlen, tmplen, val_lav;
 
     EVP_CIPHER_CTX *ctx;
 
@@ -190,18 +190,19 @@ int do_dec(const unsigned char * input, string username, int encdec, unsigned ch
         perror("dec update");
         return 0;
     }
-
-    // if(!EVP_DecryptFinal_ex(ctx,(unsigned char *) (out + outlen), &tmplen))
-    // {
-    //     perror("Dec Final");
-    //     return 0;
-    // }
+    val_lav = outlen;
+    if(!EVP_DecryptFinal_ex(ctx,(unsigned char *) (out + outlen), &outlen))
+    {
+        perror("Dec Final");
+        return val_lav;
+    }
+    val_lav += outlen;
     cout << "Outlen: " << outlen << endl;
     printf("OUTPUT: %s\n", out);
-    // outlen += tmplen;
+
     // out[outlen] = reinterpret_cast<const unsigned char *>( "\0") ;
     EVP_CIPHER_CTX_free(ctx);
-    return outlen;
+    return val_lav;
 }
 void getKeyIv(string username, unsigned char * key, unsigned char * iv) {
     struct passwd * pwd = getpwnam(username.c_str());
@@ -231,6 +232,7 @@ void getKeyIv(string username, unsigned char * key, unsigned char * iv) {
             if( PKCS5_PBKDF2_HMAC_SHA1(token, strlen(token), NULL, 0, 50, 16, iv) == 0 ) {
                 perror("PBKDF");
             }
+            break;
         }
     }
     fclose(fd);
@@ -280,3 +282,76 @@ void do_crypt(const unsigned char * input, string username, int encdec, unsigned
 // void String2Char(string input, char * output) {
 
 // }
+
+void encdec(const unsigned char * input, string username, int encdec, unsigned char * out) {
+    unsigned char *key;
+    unsigned char *iv;
+
+    key = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    iv = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+    
+    getKeyIv(username, key, iv);
+
+    AES_KEY EncDec;
+    AES_set_decrypt_key((const unsigned char *) KEY, 128, &EncDec);
+    if (encdec == 0) {
+        // Decrypt
+        AES_decrypt((const unsigned char *) input, out, (const AES_KEY *) &EncDec);
+    }
+    else {
+        AES_encrypt((const unsigned char *) input, out, (const AES_KEY *) &EncDec);
+    }
+}
+
+
+
+int getch() {
+    int ch;
+    struct termios t_old, t_new;
+
+    tcgetattr(STDIN_FILENO, &t_old);
+    t_new = t_old;
+    t_new.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
+
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
+
+    return ch;
+}
+
+void getPass(char *prompt, int show_asterisk, char * password)
+{
+    int BACKSPACE = 127;
+    int RETURN = 10;
+
+    int count = 0;
+    int ch = 0;
+
+    printf("%s: ", prompt);
+
+    while ((ch = getch()) != RETURN)
+    {
+
+        if (ch == BACKSPACE)
+        {
+            if (count != 0) {
+                if (show_asterisk != 0) {
+                    printf("\b \b");
+                }
+                count--;
+            }
+        }
+        else
+        {
+            char temp = ch;
+            password[count] = temp;
+            count++;
+            if (show_asterisk != 0) {
+                printf("*");
+            }
+        }
+    }
+    password[count] = '\0';
+    printf("\n");
+}

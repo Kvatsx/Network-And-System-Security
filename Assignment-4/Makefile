@@ -1,8 +1,8 @@
 all: IRC
 
 IRC: server.o client.o helper.o
-	g++ -pthread -o server server.o helper.o -g -lcrypto -Wall
-	g++ -pthread -o client client.o helper.o -g -lcrypto -Wall 
+	g++ -pthread -o server server.o helper.o -g -lssl -lcrypto -Wall
+	g++ -pthread -o client client.o helper.o -g -lssl -lcrypto -Wall 
 
 server:
 	./server
