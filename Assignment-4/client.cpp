@@ -22,10 +22,13 @@ void * SendMessage(void * argv) {
         size_t size;
         getline(&input, &size, stdin);
         input[strlen(input)-1] = '\0';
-        cout << "Input: " << input << endl;
+        cout << ": ";
         if (size == 0 || strlen(input) == 0) {
             continue;
         }
+        char mem2[BUFSIZE];
+        strcpy(mem2, input);
+
         // cout << "L: " << strlen(input) << endl;
         unsigned char *out;
         out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
@@ -37,6 +40,77 @@ void * SendMessage(void * argv) {
             perror("send error\n");
             exit(1);
         }
+        
+        // Reuqest file code
+        char * tkn = strtok(mem2, " ");
+        if (strcmp(tkn, "/request_file") == 0) {
+            cout << "Waiting 3 sec!" << endl;
+            sleep(1);
+            tkn = strtok(NULL, " ");
+            const char * FILENAME = "./foo";
+            // ------------------------
+            int client_socket;
+            ssize_t len;
+            struct sockaddr_in remote_addr;
+            char buffer[BUFSIZ];
+            int file_size;
+            FILE *received_file;
+            int remain_data = 0;
+
+            /* Zeroing remote_addr struct */
+            memset(&remote_addr, 0, sizeof(remote_addr));
+
+            /* Construct remote_addr struct */
+            remote_addr.sin_family = AF_INET;
+            inet_pton(AF_INET, "127.0.0.1", &(remote_addr.sin_addr));
+            remote_addr.sin_port = htons(atoi(tkn));
+
+            /* Create client socket */
+            client_socket = socket(AF_INET, SOCK_STREAM, 0);
+            if (client_socket == -1)
+            {
+                    fprintf(stderr, "Error creating socket --> %s\n", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            /* Connect to the server */
+            if (connect(client_socket, (struct sockaddr *)&remote_addr, sizeof(struct sockaddr)) == -1)
+            {
+                    fprintf(stderr, "Error on connect --> %s\n", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+            cout << "connected..." << endl;
+            /* Receiving file size */
+            recv(client_socket, buffer, BUFSIZ, 0);
+            file_size = atoi(buffer);
+            fprintf(stdout, "\nFile size : %d\n", file_size);
+
+            received_file = fopen(FILENAME, "w");
+            if (received_file == NULL)
+            {
+                    fprintf(stderr, "Failed to open file foo --> %s\n", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            remain_data = file_size;
+
+            cout << "Ready to Recv!" << endl;
+            while ((remain_data > 0) && ((len = recv(client_socket, buffer, BUFSIZ, 0)) > 0))
+            {
+                    fwrite(buffer, sizeof(char), len, received_file);
+                    remain_data -= len;
+                    fprintf(stdout, "Receive %d bytes and we hope :- %d bytes\n", len, remain_data);
+            }
+            fclose(received_file);
+
+            close(client_socket);
+            cout << "Done!" << endl;
+
+        }
+
     }
 }
 
@@ -209,7 +283,6 @@ int main(int argc, char const *argv[]) {
     user = username;
 
     if (checkUsername(username) == -1) {
-        cout << "Thats not your real name!" << endl;
         close(fd_chat);
         exit(1);
     }
@@ -269,7 +342,14 @@ int main(int argc, char const *argv[]) {
 
         int ret = do_dec((const unsigned char *) Buffer, user, 0, out);
         out[ret] = '\0';
-        cout << "s: " << out << endl;
+        if (strncmp((const char *) out, "dhxchg", 7) == 0) {
+            string gobar;
+            init_diffi(user, gobar);
+            cout << gobar << endl;
+        }
+        else {
+            cout << "s: " << out << endl;
+        }
     }
 
     pthread_join(thread1, NULL);

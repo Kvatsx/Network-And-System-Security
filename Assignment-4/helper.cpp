@@ -227,6 +227,28 @@ void getKeyIv(string username, unsigned char * key, unsigned char * iv) {
     fclose(fd);
 }
 
+void init_diffi(std::string user, string &gobar) {
+    // creating nonce 
+    int number = rand() % 9000 + 1000;
+    gobar += "P: ";
+
+    // cout << "P: " << number << endl;
+    string num = to_string(number);
+    gobar += num;
+    gobar += "\n";
+    unsigned char * prev = (unsigned char *) malloc(32 * sizeof(unsigned char));
+    PKCS5_PBKDF2_HMAC_SHA1(num.c_str(), strlen(num.c_str()), NULL, 0, 100, 32, prev);
+    sleep(0.7);
+    char out[33];
+    strncpy(out, (const char *) prev, 32);
+    out[32] = '\0';
+    // cout << "gPower: " << out << endl;
+    // string newout(out);
+    gobar += "gPower: ";
+    gobar += out;
+    gobar += "\n";
+}
+
 void do_crypt(const unsigned char * input, string username, int encdec, unsigned char * out) {
     unsigned char *key;
     unsigned char *iv;
@@ -346,16 +368,15 @@ void getPass(char *prompt, int show_asterisk, char * password)
 }
 
 int Encrypted_send(char * input, string user, int fd) {
-    unsigned char *out;
-    out = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
-    int ret = do_enc((const unsigned char *)input, user, 1, out);
-    out[ret] = '\0';
+    unsigned char *prevprev;
+    unsigned char *verpverp;
 
-    sleep(1);
-    if (send(fd, out, strlen((const char *)out), 0) == -1) {
-        perror("send error\n");
-        return -1;
-    }
+    prevprev = (unsigned char *) malloc(sizeof(unsigned char) * 32);   
+    verpverp = (unsigned char *) malloc(sizeof(unsigned char) * 16); 
+
+    getKeyIv(user, prevprev, verpverp);
+
+    cout << "Final Key: " << prevprev << endl;
     return 1;
 }
 
@@ -374,9 +395,9 @@ int Decrypted_recv(char * out, string user, int fd) {
 int checkUsername(char * username) {
     struct passwd * pwd = getpwuid(getuid());
     // cout << "Expected user: " << pwd->pw_name << endl; 
-    cout << "Thats not your real name!" << endl;
 
     if (strcmp(pwd->pw_name, username) != 0) {
+        cout << "Thats not your real name!" << endl;
         return -1;
     }
     return 1;

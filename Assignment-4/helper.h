@@ -1,6 +1,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+// Ref: file sharing https://stackoverflow.com/questions/11952898/c-send-and-receive-file
 #define KEY "BA67C85F805DB78A9E01812383348483"
 #include <unistd.h> 
 #include <iostream>
@@ -19,7 +20,6 @@
 #include <time.h>
 #include <list> 
 #include <iterator> 
-#include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <pwd.h>
@@ -36,10 +36,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
-#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
 
 #define KDC_PORT 5555
 #define CHAT_PORT 6666
+#define FILE_PORT 7777
 #define BUFSIZE 5024
 #define CONNECTIONS 6
 
@@ -60,6 +65,6 @@ int checkFilePermissions(const char * filename, std::string user);
 void encdec(const unsigned char * input, std::string username, int encdec, unsigned char * out);
 void getPass(char *prompt, int show_asterisk, char * password);
 int checkUsername(char * username);
-
+void init_diffi(std::string user, std::string &gobar);
 
 #endif

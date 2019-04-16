@@ -291,7 +291,7 @@ void * ConnectionHandler(void * argv) {
                 tkn = strtok(NULL, " ");
             }
         }
-        else if (strncmp(tkn, "/group_invite_acc", 18) == 0) {
+        else if (strncmp(tkn, "/group_invite_accept", 18) == 0) {
             tkn = strtok(NULL, " ");
             if (tkn == NULL) {
                 continue;
@@ -299,6 +299,7 @@ void * ConnectionHandler(void * argv) {
             int gid = atoi(tkn);
             if (Groups.find(gid) != Groups.end()) {
                 Groups[gid].push_back(username);
+                cout << "added user" << endl;
             }
         }
         else if (strncmp(tkn, "/request_public_key", 20) == 0) {
@@ -389,7 +390,7 @@ void * ConnectionHandler(void * argv) {
                     output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
                     int ret = do_enc((const unsigned char *) chararray, user, 1, output);
                     output[ret] = '\0';
-                    if (send(temp_fd, output, sizeof((const char *) output), 0) == -1) {
+                    if (send(temp_fd, output, strlen((const char *) output), 0) == -1) {
                         perror("send error\n");
                     }
                 }
@@ -459,11 +460,167 @@ void * ConnectionHandler(void * argv) {
             }
         }
         else if (strncmp(tkn, "/init_group_dhxchg", 19) == 0) {
-            // TODO:
+            string gobar = "";
+            cout << "starting dh exchange..." << endl;
+            gobar += "starting dh exchange...\n";
+            tkn = strtok(NULL, " ");
+            int gid = atoi(tkn);
+            string reply = "";
+            reply += "dhxchg";
+            list<string> group_list = Groups[gid];
+            char chararray[BUFSIZE]; 
+            strcpy(chararray, reply.c_str());
+
+            for (list<string>::const_iterator i = group_list.begin(); i != group_list.end(); i++) {
+                string user(i->c_str());
+                if (LoginStatus[user] != 0 && username.compare(user) != 0) {
+                    int temp_fd = Fd_map[user];
+                    unsigned char *output;
+                    output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+                    int ret = do_enc((const unsigned char *) chararray, user, 1, output);
+                    output[ret] = '\0';
+                    if (send(temp_fd, output, strlen((const char *) output), 0) == -1) {
+                        perror("send error\n");
+                    }
+                }
+            }
+            init_diffi(username, gobar);
+
+            // char chararray[BUFSIZE]; 
+            memset(chararray, '\0', BUFSIZE);
+            strcpy(chararray, gobar.c_str());
+            unsigned char *output;
+            output = (unsigned char *) malloc(sizeof(unsigned char) * BUFSIZE);
+            int ret = do_enc((const unsigned char *) chararray, username, 1, output);
+            output[ret] = '\0';
+            if (send(fd, output, strlen((const char *) output), 0) == -1) {
+                perror("send error\n");
+            }
             
         }
         else if (strncmp(tkn, "/request_file", 14) == 0) {
             // TODO;
+            tkn = strtok(NULL, " ");
+            int port = atoi(tkn);
+            tkn = strtok(NULL, " ");
+            string user(tkn);
+            string path = "/fakeslash/fakehome/";
+            path += user;
+            path += "/";
+            tkn = strtok(NULL, " ");
+            string filename(tkn);
+            path += tkn;
+            cout << "PATH: " << path << endl;
+
+            // Sending code
+            int server_socket;
+            int peer_socket;
+            socklen_t       sock_len;
+            ssize_t len;
+            struct sockaddr_in server_addr;
+            struct sockaddr_in peer_addr;
+            int fd;
+            int sent_bytes = 0;
+            char file_size[256];
+            struct stat file_stat;
+            off_t offset;
+            int remain_data;
+
+            /* Create server socket */
+            server_socket = socket(AF_INET, SOCK_STREAM, 0);
+            if (server_socket == -1)
+            {
+                    fprintf(stderr, "Error creating socket --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            /* Zeroing server_addr struct */
+            memset(&server_addr, 0, sizeof(server_addr));
+            /* Construct server_addr struct */
+            server_addr.sin_family = AF_INET;
+            inet_pton(AF_INET, "127.0.0.1", &(server_addr.sin_addr));
+            server_addr.sin_port = htons(port);
+
+            /* Bind */
+            if ((bind(server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr))) == -1)
+            {
+                    fprintf(stderr, "Error on bind --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            /* Listening to incoming connections */
+            if ((listen(server_socket, 5)) == -1)
+            {
+                    fprintf(stderr, "Error on listen --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            fd = open(path.c_str(), O_RDONLY);
+            if (fd == -1)
+            {
+                    fprintf(stderr, "Error opening file --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            /* Get file stats */
+            if (fstat(fd, &file_stat) < 0)
+            {
+                    fprintf(stderr, "Error fstat --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+
+            fprintf(stdout, "File Size: \n%d bytes\n", file_stat.st_size);
+
+            sock_len = sizeof(struct sockaddr_in);
+            /* Accepting incoming peers */
+            peer_socket = accept(server_socket, (struct sockaddr *)&peer_addr, &sock_len);
+            if (peer_socket == -1)
+            {
+                    fprintf(stderr, "Error on accept --> %s", strerror(errno));
+
+                    exit(EXIT_FAILURE);
+            }
+            fprintf(stdout, "Accept peer --> %s\n", inet_ntoa(peer_addr.sin_addr));
+
+            sprintf(file_size, "%d", file_stat.st_size);
+
+            cout << "FD: " << peer_socket << endl;
+
+            /* Sending file size */
+            len = send(peer_socket, file_size, sizeof(file_size), 0);
+            if (len < 0)
+            {
+                fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
+
+                exit(EXIT_FAILURE);
+            }
+
+            fprintf(stdout, "Server sent %d bytes for the size\n", len);
+
+            offset = 0;
+            remain_data = file_stat.st_size;
+            /* Sending file data */
+            cout << "Ready to send!" << endl;
+            while (((sent_bytes = sendfile(peer_socket, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
+            {
+                    fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %d and remaining data = %d\n", sent_bytes, offset, remain_data);
+                    remain_data -= sent_bytes;
+                    fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %d and remaining data = %d\n", sent_bytes, offset, remain_data);
+            }
+
+            close(peer_socket);
+            close(server_socket);
+
+            // ------------------
+            cout << "Done!" << endl;
+
+
+            // -------------------------
         }
         else {
             cout << "Why?" << endl;
