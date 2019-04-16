@@ -32,6 +32,12 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/aes.h>
+#include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +47,8 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/sendfile.h>
+#include <netdb.h>
+#include <memory.h>
 
 #define KDC_PORT 5555
 #define CHAT_PORT 6666
