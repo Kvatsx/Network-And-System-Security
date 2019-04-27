@@ -76,7 +76,8 @@ void process_packet(unsigned char* buffer, int size)
     struct iphdr *iph = (struct iphdr*)buffer;
     struct sockaddr_in source,dest;
     unsigned short iphdrlen;
-     
+
+    // printf("protocol %d\n", iph->protocol); 
     if(iph->protocol == 6)
     {
         struct iphdr *iph = (struct iphdr *)buffer;
@@ -89,7 +90,9 @@ void process_packet(unsigned char* buffer, int size)
      
         memset(&dest, 0, sizeof(dest));
         dest.sin_addr.s_addr = iph->daddr;
-         
+
+        // printf("PORT: %d\n", tcph->dest);
+        // printf("syn:%d\tack:%d\n", tcph->syn, tcph->ack); 
         if(tcph->syn == 1 && tcph->ack == 1 && source.sin_addr.s_addr == dest_ip.s_addr )
         {
             printf("Port %d open \n" , ntohs(tcph->source));

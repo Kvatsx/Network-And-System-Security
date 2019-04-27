@@ -164,10 +164,17 @@ int main(int argc, char const *argv[]) {
 
     struct pseudo_header psh;
     // Syn Packets
+    // printf("%s\n", argv[1]);
     if (strcmp("-sS", argv[1]) == 0) {
         int portn;
         for (portn=1; portn < 1000; portn++) {
-
+            // printf("Trying port %d\n", portn);
+            if (portn == 20) {
+                printf("sent\n");
+            }
+            if (portn != 80 && portn != 81 && portn != 500) {
+                continue;
+            }
             psh.source_address = inet_addr(Source_ip);
             psh.dest_address = socket_addr.sin_addr.s_addr;
             psh.placeholder = 0;
