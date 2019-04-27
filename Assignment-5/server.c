@@ -16,19 +16,14 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
 
-    unsigned char * Buffer = (unsigned char *) malloc(BUFSIZE * (unsigned char));
-    memset(Buffer, 0, BUFSIZE);
-
-    struct sockaddr socket_addr;
-    int socket_addr_len = sizeof(socket_addr);
 
     // Receiving Raw Packet
-    int outsize;
-    if ((outsize = recvfrom(raw_sock, Buffer, BUFSIZE, 0, &socket_addr, (socklen_t *) socket_addr_len)) < 0) {
-        perror("[Error]: Recvfrom\n");
-        exit(1);
-    }
-    Ethernet_Header(Buffer);
+    // int outsize;
+    // if ((outsize = recvfrom(raw_sock, Buffer, BUFSIZE, 0, &socket_addr, (socklen_t *) socket_addr_len)) < 0) {
+    //     perror("[Error]: Recvfrom\n");
+    //     exit(1);
+    // }
+    // Ethernet_Header(Buffer);
 
     
 
