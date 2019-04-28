@@ -6,6 +6,8 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <netinet/ip_icmp.h> 
+// #include <netinet/icmp.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include "utils.h"
@@ -39,12 +41,35 @@ void set_tcp_header(struct tcphdr * tcph) {
     
 }
 
+void set_udp_ip_header(struct iphdr * iph, char * buf, char * ipaddr) {
+    iph->ihl = 5;
+    iph->version = 4;
+    iph->tos = 0;
+    iph->tot_len = sizeof (struct ip) + sizeof (struct udphdr);
+    iph->id = htons (54321);
+    iph->frag_off = htons(16384);
+    iph->ttl = 64;
+    iph->protocol = IPPROTO_UDP;
+    iph->check = 0;   
+    iph->saddr = inet_addr ( ipaddr );  
+    iph->daddr = dest_ip.s_addr;
+     
+    iph->check = csum ((unsigned short *) buf, iph->tot_len >> 1);
+}
+
+
+void set_udp_header(struct udphdr * udph) {
+    udph->source = htons(PORT);
+    udph->check = 0;
+    udph->len = htons(sizeof(struct udphdr));
+}
+
 void CheckPacket(unsigned char * buf, int DataSize) {
     struct iphdr * iph = (struct iphdr *) buf;
     unsigned short iphdrlen;
 
     if(iph->protocol == 6)
-    {
+    {   
         struct iphdr *iph = (struct iphdr *)buf;
         iphdrlen = iph->ihl*4;
      
@@ -59,6 +84,28 @@ void CheckPacket(unsigned char * buf, int DataSize) {
         }
     }
 }
+
+
+void CheckUdpPacket(unsigned char * buf, int DataSize) {
+    struct iphdr * iph = (struct iphdr *) buf;
+    unsigned short iphdrlen;
+
+    if(iph->protocol == 1)
+    {
+        // printf("Port: %d\n", ntohs(udph->source));
+        struct iphdr *iph = (struct iphdr *)buf;
+        iphdrlen = iph->ihl*4;
+     
+        struct icmphdr *icmph=(struct icmphdr*)(buf + iphdrlen);
+        
+        if(iph->saddr == dest_ip.s_addr )
+        {
+            
+            printf("Port %d \n" , icmph->code);
+        }
+    }
+}
+
 void printDetails(struct tcphdr* tcph, struct iphdr* iph) {
     printf("Port: %d, ips: %d, ipd: %d, syn: %d, ack: %d\n", ntohs(tcph->source), iph->saddr, iph->daddr, tcph->syn, tcph->ack);
 }   
