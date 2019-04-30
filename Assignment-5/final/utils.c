@@ -86,10 +86,10 @@ void CheckPacket(unsigned char * buf, int DataSize) {
 }
 
 
-void CheckUdpPacket(unsigned char * buf, int DataSize) {
+int CheckUdpPacket(unsigned char * buf, int DataSize) {
     struct iphdr * iph = (struct iphdr *) buf;
     unsigned short iphdrlen;
-
+    
     if(iph->protocol == 1)
     {
         // printf("Port: %d\n", ntohs(udph->source));
@@ -97,13 +97,15 @@ void CheckUdpPacket(unsigned char * buf, int DataSize) {
         iphdrlen = iph->ihl*4;
      
         struct icmphdr *icmph=(struct icmphdr*)(buf + iphdrlen);
-        
-        if(iph->saddr == dest_ip.s_addr )
-        {
-            
-            printf("Port %d \n" , icmph->code);
+        int type = icmph->type;
+        int code = icmph->code;
+        // printf("%d\n%d\n", type, code);
+        if(iph->saddr == dest_ip.s_addr && type == 3 && code == 3) {
+            // printf("%s\n", "yoo");
+            return 0;
         }
     }
+    return 1;
 }
 
 void printDetails(struct tcphdr* tcph, struct iphdr* iph) {

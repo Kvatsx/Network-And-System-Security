@@ -37,7 +37,7 @@ void set_udp_ip_header(struct iphdr * iph, char * buf, char * ipaddr);
 void set_tcp_header(struct tcphdr * tcph);
 void set_udp_header(struct udphdr * udph);
 void CheckPacket(unsigned char * buf, int DataSize);
-void CheckUdpPacket(unsigned char * buf, int DataSize);
+int CheckUdpPacket(unsigned char * buf, int DataSize);
 
 unsigned short csum(unsigned short *ptr,int nbytes);
 void printDetails(struct tcphdr* tcph, struct iphdr* iph);

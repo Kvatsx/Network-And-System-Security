@@ -17,6 +17,7 @@
 #include "utils.h"
 
 pthread_t thread1;
+int global_ret;
 
 void * Recv(void * argv) {
     int lol = (int) argv;
@@ -25,6 +26,7 @@ void * Recv(void * argv) {
     int s_addr_size = sizeof(s_addr);
     
     int DataSize;
+    int ret = 0;
 
     unsigned char * buf = (unsigned char *) malloc(BUFSIZE2);
     sock_r = socket(AF_INET , SOCK_RAW , IPPROTO_ICMP);
@@ -33,14 +35,18 @@ void * Recv(void * argv) {
         pthread_exit(NULL);
         exit(1);
     }
-
-    DataSize = recvfrom(sock_r, buf, BUFSIZE2, 0, &s_addr, &s_addr_size);
-    if (DataSize < 0) {
-        printf("[Error] recvfrom\n");
-        pthread_exit(NULL);
-        exit(1);
+    while(1) {
+        DataSize = recvfrom(sock_r, buf, BUFSIZE2, 0, &s_addr, &s_addr_size);
+        if (DataSize < 0) {
+            printf("[Error] recvfrom\n");
+            pthread_exit(NULL);
+            exit(1);
+        }
+        // printf("Packet aya\n");
+        ret = CheckUdpPacket(buf, DataSize);
+        if (ret == 0)
+            global_ret = 0;
     }
-    CheckUdpPacket(buf, DataSize);
     close(sock_r);
     // printf("[Done]\n");
     pthread_exit(NULL);
@@ -48,12 +54,12 @@ void * Recv(void * argv) {
 }
 
 int main(int argc, char const *argv[]) {
-    
+    // printf("%d\n", argc);
     if (argc != 4) {
-        printf("[Error] Usage: ./client -sU <Destination.IP.Addr> <Source.IP.Addr>\n");
+        printf("[Error] Usage: ./nmap_udp -sU <Destination.IP.Addr> <Source.IP.Addr>\n");
         exit(1);
     }
-
+    global_ret = 1;
     // ---------------------------------------------------
     printf("Starting Port Scanner...\n");
 
@@ -116,7 +122,14 @@ int main(int argc, char const *argv[]) {
             perror("[Error] send\n");            
             exit(1);
         }
-        sleep(7);
+        // printf("Before %d\n", global_ret);
+        sleep(5);
+        // printf("After %d\n", global_ret);
+        if (global_ret != 0) {
+            printf("Port %d open|filtered\n", port);
+        }
+        global_ret = 1;
+
     }
 
     pthread_join(thread1, NULL);
